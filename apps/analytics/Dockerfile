@@ -1,7 +1,7 @@
 # Build
 FROM node:22-alpine AS build
 WORKDIR /app
-COPY ./apps/frontend ./
+COPY ./apps/analytics ./
 RUN npm install
 RUN npm run build
 

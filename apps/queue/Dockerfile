@@ -1,6 +1,6 @@
 FROM node:22-alpine
 WORKDIR /app
-COPY ./apps/backend ./
+COPY ./apps/queue ./
 RUN npm install
 RUN npm run build
 EXPOSE 3001
