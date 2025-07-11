@@ -1,0 +1,18 @@
+name: Deploy Analytics App
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'apps/analytics/**'
+      - '.github/workflows/deploy-analytics.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Deploy Analytics to Render
+      run: |
+        curl -X POST ${{ secrets.RENDER_ANALYTICS_DEPLOY_HOOK }}

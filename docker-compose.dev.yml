@@ -1,26 +1,32 @@
 version: '3.8'
 services:
   analytics:
-    container_name: scraper-analytics
+    container_name: scraper-analytics-dev
     build:
       context: ./apps/analytics
       dockerfile: Dockerfile
-      target: prod
+      target: dev
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
+    volumes:
+      - ./apps/analytics:/app
+      - /app/node_modules
 
   queue:
-    container_name: scraper-queue
+    container_name: scraper-queue-dev
     build:
       context: ./apps/queue
       dockerfile: Dockerfile
-      target: prod
+      target: dev
     ports:
       - "3001:3001"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=3001
     env_file:
       - ./apps/queue/.env
+    volumes:
+      - ./apps/queue:/app
+      - /app/node_modules

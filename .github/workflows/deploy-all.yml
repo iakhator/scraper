@@ -1,0 +1,49 @@
+name: Deploy All Apps
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+  workflow_dispatch:
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      analytics-changed: ${{ steps.changes.outputs.analytics }}
+      queue-changed: ${{ steps.changes.outputs.queue }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check for changes
+      uses: dorny/paths-filter@v3
+      id: changes
+      with:
+        filters: |
+          analytics:
+            - 'apps/analytics/**'
+          queue:
+            - 'apps/queue/**'
+
+  deploy-analytics:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.analytics-changed == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Deploy Analytics to Render
+      run: |
+        curl -X POST ${{ secrets.RENDER_ANALYTICS_DEPLOY_HOOK }}
+
+  deploy-queue:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.queue-changed == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Deploy Queue to Render
+      run: |
+        curl -X POST ${{ secrets.RENDER_QUEUE_DEPLOY_HOOK }}

@@ -1,0 +1,18 @@
+name: Deploy Queue App
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'apps/queue/**'
+      - '.github/workflows/deploy-queue.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Deploy Queue to Render
+      run: |
+        curl -X POST ${{ secrets.RENDER_QUEUE_DEPLOY_HOOK }}

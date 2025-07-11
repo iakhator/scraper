@@ -5,14 +5,12 @@ import {
   UpdateItemCommand,
   DeleteItemCommand,
   BatchWriteItemCommand,
-  QueryCommand,
-  ScanCommand,
   DynamoDBClientConfig,
   DynamoDBServiceException,
 } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
-import { globalConfig } from "../config.js";
-import logger from "../logger.js";
+import { globalConfig } from "../config";
+import logger from "../logger";
 
 // types definition
 type DynamoItem = Record<string, any>;
@@ -54,7 +52,7 @@ export async function putItem(
     logger.debug("DynamoDB putItem success", { tableName, itemId: item.id });
     return { data: Attributes ? unmarshall(Attributes) : undefined };
   } catch (error) {
-    const err = handleDynamoError(error, "putItem", { tableName });
+    const err = handleDynamoError(error, "putItem", { tableName, itemId: item.id });
     logger.error("DynamoDB putItem failed", { error: err, tableName, itemId: item.id });
     return { error: err };
   }
@@ -93,12 +91,13 @@ function handleDynamoError(
   context: Record<string, any>
 ): Error {
   if (error instanceof DynamoDBServiceException) {
-    const message = `DynamoDB ${operation} failed (${error.name})`;
-    const enhancedError = new Error(message);
-    enhancedError.name = "DynamoDBError";
-    return enhancedError;
+    (error as any).operation = operation;
+    (error as any).context = context;
+    return error;
   }
-  return new Error(
-    `Unexpected error during DynamoDB ${operation}: ${error instanceof Error ? error.message : String(error)}`
-  );
+  
+  const baseError = error instanceof Error ? error : new Error(String(error));
+  (baseError as any).operation = operation;
+  (baseError as any).context = context;
+  return baseError;
 }

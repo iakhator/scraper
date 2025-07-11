@@ -23,11 +23,10 @@ const logger = createLogger({
   levels,
   format: format.combine(
     format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    format.errors({ stack: true }), // Captures error stacks
-    format.json() // Default format for files
+    format.errors({ stack: true }), 
+    format.json() 
   ),
   transports: [
-    // Console transport (pretty printing)
     new transports.Console({
       format: format.combine(
         format.printf(({ level, message, timestamp, stack, ...meta }) => {
@@ -55,13 +54,12 @@ const logger = createLogger({
     })
   ],
   defaultMeta: {
-    service: 'your-service-name',
+    service: 'scraper-queue',
     hostname: os.hostname(),
     pid: process.pid
   }
 });
 
-// 4. Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception', error);
   process.exit(1);
@@ -71,7 +69,6 @@ process.on('unhandledRejection', (reason) => {
   logger.error('Unhandled Rejection', reason instanceof Error ? reason : new Error(String(reason)));
 });
 
-// 5. Simplified API
 export default {
   error: (message: string, meta?: Record<string, unknown>) => logger.error(message, meta),
   warn: (message: string, meta?: Record<string, unknown>) => logger.warn(message, meta),
