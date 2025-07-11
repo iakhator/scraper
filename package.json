@@ -1,0 +1,14 @@
+{
+  "name": "scraper",
+  "private": true,
+  "workspaces": [
+    "apps/frontend",
+    "apps/backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=apps/analytics\" \"npm run dev --workspace=apps/queue\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.1"
+  }
+}
