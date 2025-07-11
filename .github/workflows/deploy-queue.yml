@@ -1,4 +1,4 @@
-name: Deploy Queue App
+name: Queue CI
 
 on:
   push:
@@ -9,10 +9,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  validate:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Deploy Queue to Render
-      run: |
-        curl -X POST ${{ secrets.RENDER_QUEUE_DEPLOY_HOOK }}
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Validate Dockerfile
+      working-directory: ./apps/queue
+      run: docker build --target build .

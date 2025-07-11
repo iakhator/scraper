@@ -1,4 +1,4 @@
-name: Deploy Analytics App
+name: Analytics CI
 
 on:
   push:
@@ -9,10 +9,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  validate:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Deploy Analytics to Render
-      run: |
-        curl -X POST ${{ secrets.RENDER_ANALYTICS_DEPLOY_HOOK }}
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Validate Dockerfile
+      working-directory: ./apps/analytics
+      run: docker build --target build .
