@@ -10,7 +10,7 @@ import {
 } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { globalConfig } from "../config";
-import logger from "../logger";
+import logger from "../../logger";
 
 // types definition
 type DynamoItem = Record<string, any>;

@@ -60,14 +60,14 @@ const logger = createLogger({
   }
 });
 
-process.on('uncaughtException', (error) => {
-  logger.error('Uncaught Exception', error);
-  process.exit(1);
-});
+// process.on('uncaughtException', (error) => {
+//   logger.error('Uncaught Exception', error);
+//   process.exit(1);
+// });
 
-process.on('unhandledRejection', (reason) => {
-  logger.error('Unhandled Rejection', reason instanceof Error ? reason : new Error(String(reason)));
-});
+// process.on('unhandledRejection', (reason) => {
+//   logger.error('Unhandled Rejection', reason instanceof Error ? reason : new Error(String(reason)));
+// });
 
 export default {
   error: (message: string, meta?: Record<string, unknown>) => logger.error(message, meta),
@@ -84,5 +84,5 @@ export default {
     logger.debug(`DB Query executed`, { query, durationMs }),
   
   startup: (port: number | string) => 
-    logger.info(`Server running on port ${port}`)
+    logger.info(`Server running on port http://localhost:${port}`)
 };

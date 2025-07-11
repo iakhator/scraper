@@ -3,6 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { configureAWS, aws } from "./aws-wrapper";
+import logger from "./logger";
 
 dotenv.config()
 
@@ -19,13 +20,15 @@ app.use(express.json())
 
 
 app.get('/api', async(req, res) => {
+  logger.info("API endpoint called", { endpoint: "/api" });
+  
   const item = await aws.dynamodb.getItem("scraper-db", {
-  PK: "123" 
-});
-  res.json({ item, message: 'Hello from Express API 1' })
+    PK: "123" 
+  });
+  res.json({ item, message: 'Hello from Express API' });
 })
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
-  console.log(`API running on http://localhost:${PORT}`)
+  logger.startup(PORT);
 })
