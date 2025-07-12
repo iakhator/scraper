@@ -20,6 +20,7 @@ type DynamoReturn<T> = { data?: T; error?: Error };
 // config
 const DEFAULT_CONFIG: DynamoDBClientConfig = {
   region: globalConfig.region,
+  maxAttempts: 3,
   retryMode: "standard",
   ...(globalConfig.dynamodb || {}), 
 };

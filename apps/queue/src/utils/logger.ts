@@ -19,39 +19,43 @@ const levelColors = {
   debug: chalk.magenta,
 };
 
+const logLevel = process.env.NODE_ENV === 'production' ? 'info' : 'debug';
+
 const logger = createLogger({
   levels,
   format: format.combine(
-    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    format.errors({ stack: true }), 
-    format.json() 
+    format.errors({ stack: true }),
+    format.json(),
+    format.printf(({ level, message, timestamp, stack, ...meta }) => {
+      const customTimestamp = new Date().toLocaleString('en-US', { timeZone: 'UTC', hour12: false })
+        .replace(/,/, '')
+        .replace(/\//g, '-')
+        .replace(/(\d\d:\d\d:\d\d)/, ' $1 UTC');
+      const color = levelColors[level as keyof typeof levelColors] || chalk.white;
+      let log = `${chalk.gray(customTimestamp)} ${color(level.toUpperCase())} ${message}`;
+      
+      if (stack) log += `\n  ${typeof stack === 'string' ? stack.replace(/\n/g, '\n  ') : stack}`;
+      if (Object.keys(meta).length) {
+        log += `\n${chalk.gray(JSON.stringify(meta, null, 2))}`;
+      }
+      
+      return log;
+    })
   ),
   transports: [
     new transports.Console({
-      format: format.combine(
-        format.printf(({ level, message, timestamp, stack, ...meta }) => {
-          const color = levelColors[level as keyof typeof levelColors] || chalk.white;
-          let log = `${chalk.gray(timestamp)} ${color(level.toUpperCase())} ${message}`;
-          
-          if (stack) log += `\n${stack}`;
-          if (Object.keys(meta).length) {
-            log += `\n${chalk.gray(JSON.stringify(meta, null, 2))}`;
-          }
-          
-          return log;
-        })
-      )
+      level: logLevel
     }),
-
-    // Rotating file transport (production)
     new DailyRotateFile({
       filename: 'logs/application-%DATE%.log',
       datePattern: 'YYYY-MM-DD',
       zippedArchive: true,
-      maxSize: '20m',
-      maxFiles: '14d',
-      level: 'http'
-    })
+      maxSize: process.env.LOG_MAX_SIZE || '20m',
+      maxFiles: process.env.LOG_RETENTION || '14d',
+      level: process.env.LOG_FILE_LEVEL || 'http',
+      handleExceptions: true,
+      handleRejections: true
+    }).on('error', (err) => logger.error('File transport error', { err }))
   ],
   defaultMeta: {
     service: 'scraper-queue',
@@ -60,14 +64,14 @@ const logger = createLogger({
   }
 });
 
-// process.on('uncaughtException', (error) => {
-//   logger.error('Uncaught Exception', error);
-//   process.exit(1);
-// });
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception', { error, stack: error.stack });
+  setTimeout(() => process.exit(1), 1000); // Allow logger to flush
+});
 
-// process.on('unhandledRejection', (reason) => {
-//   logger.error('Unhandled Rejection', reason instanceof Error ? reason : new Error(String(reason)));
-// });
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled Rejection', reason instanceof Error ? reason : new Error(String(reason)));
+});
 
 export default {
   error: (message: string, meta?: Record<string, unknown>) => logger.error(message, meta),
@@ -76,7 +80,6 @@ export default {
   http: (message: string, meta?: Record<string, unknown>) => logger.http(message, meta),
   debug: (message: string, meta?: Record<string, unknown>) => logger.debug(message, meta),
 
-  // Specialized loggers
   request: (req: { method: string; url: string; ip?: string }) => 
     logger.http(`Request: ${req.method} ${req.url}`, { ip: req.ip }),
   
