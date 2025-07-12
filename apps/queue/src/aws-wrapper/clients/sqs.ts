@@ -10,7 +10,7 @@ import {
   SQSServiceException
 } from "@aws-sdk/client-sqs";
 import { globalConfig } from "../config";
-import logger from "../../logger"; 
+import logger from "../../utils/logger"; 
 
 // Singleton client instance
 let sqsClient: SQSClient;

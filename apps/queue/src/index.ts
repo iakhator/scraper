@@ -3,7 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { configureAWS, aws } from "./aws-wrapper";
-import logger from "./logger";
+import logger from "./utils/logger";
 
 dotenv.config()
 
