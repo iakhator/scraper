@@ -49,9 +49,13 @@ export class DatabaseService {
         return { error: result.error };
       }
 
+      if(!result.data) {
+        logger.warn(`Scraped content not found for id: ${id}`);
+        return { data: null };
+      }
+
       logger.info(`Scraped content retrieved: ${id}`);
-      
-      return result.data as DynamoReturn<ScrapedContent | null>;
+      return result.data;
   }
 
   // async saveJob(job: ScrapeJob): Promise<void> {

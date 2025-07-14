@@ -86,6 +86,58 @@ export async function getItem(
   }
 }
 
+export async function updateItem(
+  tableName: string,
+  key: DynamoKey,
+  updateExpression: string,
+  expressionAttributeValues: Record<string, any>,
+  options?: { conditionExpression?: string; returnValues?:  "NONE" | "ALL_OLD" | "UPDATED_OLD" | "ALL_NEW" | "UPDATED_NEW" }
+): Promise<DynamoReturn<DynamoItem>> {
+  const client = getClient();
+  const params = {
+    TableName: tableName,
+    Key: marshall(key),
+    UpdateExpression: updateExpression,
+    ExpressionAttributeValues: marshall(expressionAttributeValues, { removeUndefinedValues: true }),
+    ConditionExpression: options?.conditionExpression,
+    ReturnValues: options?.returnValues || "UPDATED_NEW",
+  };
+
+  try {
+    const { Attributes } = await client.send(new UpdateItemCommand(params));
+    logger.debug("DynamoDB updateItem success", { tableName, key });
+    return { data: Attributes ? unmarshall(Attributes) : undefined };
+  } catch (error) {
+    const err = handleDynamoError(error, "updateItem", { tableName, key });
+    logger.error("DynamoDB updateItem failed", { error: err, tableName, key });
+    return { error: err };
+  }
+}
+
+export async function deleteItem(
+  tableName: string,
+  key: DynamoKey,
+  options?: { conditionExpression?: string; returnValues?: "NONE" | "ALL_OLD" }
+): Promise<DynamoReturn<DynamoItem>> {
+  const client = getClient();
+  const params = {
+    TableName: tableName,
+    Key: marshall(key),
+    ConditionExpression: options?.conditionExpression,
+    ReturnValues: options?.returnValues || "ALL_OLD",
+  };
+
+  try {
+    const { Attributes } = await client.send(new DeleteItemCommand(params));
+    logger.debug("DynamoDB deleteItem success", { tableName, key });
+    return { data: Attributes ? unmarshall(Attributes) : undefined };
+  } catch (error) {
+    const err = handleDynamoError(error, "deleteItem", { tableName, key });
+    logger.error("DynamoDB deleteItem failed", { error: err, tableName, key });
+    return { error: err };
+  }
+}
+
 function handleDynamoError(
   error: unknown,
   operation: string,
