@@ -8,9 +8,11 @@ export interface AWSWrapperConfig {
   queueUrl?: string;
   dlqUrl?: string;
   tableName?: string;
+  batchMessages?: number
 }
 
 export const config: AWSWrapperConfig = {
+  batchMessages: Number(process.env.QUEUE_BATCH_SIZE) || 10,
   queueUrl: getEnvVar("SQS_QUEUE_URL") ?? "",
   dlqUrl: getEnvVar("SQS_DLQ_URL") ?? "",
   tableName: getEnvVar("DYNAMODB_TABLE") ?? "scrape_db",

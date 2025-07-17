@@ -1,6 +1,4 @@
-import { DynamoDBClient, PutItemCommand, GetItemCommand, UpdateItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb';
 import { config } from "../aws-wrapper";
-
 import { ScrapedContent, ScrapeJob , DynamoReturn} from '../types';
 import logger from '../utils/logger';
 

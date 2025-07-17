@@ -30,13 +30,25 @@ export interface ScrapeJob {
   maxRetries: number;
 }
 
+export interface DynamoReturn<T> { data?: T; error?: Error }
+
+
+// Queue Types
 export interface QueueMessage {
   jobId: string;
   url: string;
   priority: 'low' | 'medium' | 'high';
-  retryCount: number;
-  maxRetries: number;
+  retryCount?: number;
+  maxRetries?: number;
+}
+export interface QueueAttributes {
+  ApproximateNumberOfMessages?: string;
+  ApproximateNumberOfMessagesNotVisible?: string;
 }
 
-
-export interface DynamoReturn<T> { data?: T; error?: Error }
+export interface Message {
+  MessageId?: string;
+  ReceiptHandle?: string;
+  Body?: string;
+  Attributes?: Record<string, string>;
+};

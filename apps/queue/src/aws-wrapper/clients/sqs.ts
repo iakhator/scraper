@@ -1,38 +1,44 @@
 import {
-  SQSClient,
   SendMessageCommand,
   ReceiveMessageCommand,
   DeleteMessageCommand,
   SendMessageCommandInput,
   ReceiveMessageCommandInput,
   DeleteMessageCommandInput,
-  SQSClientConfig,
   SQSServiceException
 } from "@aws-sdk/client-sqs";
-import { sqsClient } from "../config";
+import { config, sqsClient } from "../config";
 import logger from "../../utils/logger"; 
+import { QueueMessage, Message } from "../../types";
 
 
 /**
  * Send message to SQS queue with error handling
  */
 export async function sendMessage(
-  params: SendMessageCommandInput
+  message: QueueMessage
 ): Promise<{ messageId: string }> {
-  const command = new SendMessageCommand(params);
   
   try {
-    const result = await sqsClient.send(command);
+    const result = await sqsClient.send(new SendMessageCommand({
+        QueueUrl: config.queueUrl,
+        MessageBody: JSON.stringify(message),
+        MessageAttributes: {
+          priority: {
+            DataType: 'String',
+            StringValue: message.priority,
+          },
+        },
+      }));
     logger.debug("Message sent successfully", { 
       messageId: result.MessageId,
-      queueUrl: params.QueueUrl 
+      queueUrl: message.url 
     });
     return { messageId: result.MessageId! };
   } catch (error) {
     logger.error("Failed to send SQS message", { 
       error,
-      queueUrl: params.QueueUrl,
-      messageBody: params.MessageBody 
+      queueUrl:message.url,
     });
     throw wrapSqsError(error, "sendMessage");
   }
@@ -42,25 +48,25 @@ export async function sendMessage(
  * Receive messages from SQS queue with error handling
  */
 export async function receiveMessages(
-  params: ReceiveMessageCommandInput
+  message: ReceiveMessageCommandInput
 ): Promise<{ messages: Message[] }> {
   const command = new ReceiveMessageCommand({
     WaitTimeSeconds: 20, 
-    MaxNumberOfMessages: 10, 
-    ...params, 
+    MaxNumberOfMessages: config.batchMessages, 
+    ...message, 
   });
 
   try {
     const result = await sqsClient.send(command);
     logger.debug("Messages received", { 
       count: result.Messages?.length || 0,
-      queueUrl: params.QueueUrl 
+      queueUrl: message.QueueUrl 
     });
     return { messages: result.Messages || [] };
   } catch (error) {
     logger.error("Failed to receive SQS messages", { 
       error,
-      queueUrl: params.QueueUrl 
+      queueUrl: message.QueueUrl 
     });
     throw wrapSqsError(error, "receiveMessages");
   }
@@ -103,11 +109,3 @@ function wrapSqsError(error: unknown, operation: string): Error {
     `Unexpected error during SQS ${operation}: ${error instanceof Error ? error.message : String(error)}`
   );
 }
-
-// Type for better code completion
-type Message = {
-  MessageId?: string;
-  ReceiptHandle?: string;
-  Body?: string;
-  Attributes?: Record<string, string>;
-};
