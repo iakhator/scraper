@@ -18,8 +18,7 @@ export let globalConfig: AWSWrapperConfig = {
   region: getEnvVar("AWS_REGION") ?? "us-east-2",
   queueUrl: getEnvVar("SQS_QUEUE_URL") ?? "",
   dlqUrl: getEnvVar("SQS_DLQ_URL") ?? "",
-  scrapedContentTable: getEnvVar("DYNAMODB_SCRAPED_CONTENT_TABLE") ?? "scraped-db",
-  scrapeJobsTable: getEnvVar("DYNAMODB_SCRAPE_JOBS_TABLE") ?? "scrape-jobs",
+  scrapeJobsTable: getEnvVar("DYNAMODB_TABLE") ?? "scrape_db",
 };
 
 export function configureAWS(awsConfig: AWSWrapperConfig) {
