@@ -23,6 +23,8 @@ router.post('/urls', async (req, res) => {
 
     const jobId = uuidv4();
     const job: ScrapeJob = {
+      PK: `JOB#${jobId}`,
+      SK: 'JOB',
       id: jobId,
       url: value.url,
       priority: value.priority,
@@ -41,9 +43,9 @@ router.post('/urls', async (req, res) => {
       maxRetries: 3,
     });
 
-    io.emit('jobSubmitted', { jobId, url: value.url, status: 'queued' });
+    // io.emit('jobSubmitted', { jobId, url: value.url, status: 'queued' });
     res.status(201).json({ jobId, status: 'queued' });
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = `Failed to submit URL ${req.body.url}: ${error.message}`;
     logger.error(errorMessage, error);
     res.status(500).json({ error: 'Internal server error' });
@@ -51,78 +53,78 @@ router.post('/urls', async (req, res) => {
 });
 
 // Submit bulk URLs
-router.post('/urls/bulk', async (req, res) => {
-  try {
-    const { error, value } = bulkUrlSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
+// router.post('/urls/bulk', async (req, res) => {
+//   try {
+//     const { error, value } = bulkUrlSchema.validate(req.body);
+//     if (error) {
+//       return res.status(400).json({ error: error.details[0].message });
+//     }
 
-    const jobIds = [];
-    for (const url of value.urls) {
-      const jobId = uuidv4();
-      const job: ScrapeJob = {
-        id: jobId,
-        url,
-        priority: value.priority,
-        status: 'queued',
-        createdAt: new Date().toISOString(),
-        retryCount: 0,
-        maxRetries: 3,
-      };
+//     const jobIds = [];
+//     for (const url of value.urls) {
+//       const jobId = uuidv4();
+//       const job: ScrapeJob = {
+//         id: jobId,
+//         url,
+//         priority: value.priority,
+//         status: 'queued',
+//         createdAt: new Date().toISOString(),
+//         retryCount: 0,
+//         maxRetries: 3,
+//       };
 
-      await databaseService.saveJob(job);
-      await queueService.sendMessage({
-        jobId,
-        url,
-        priority: value.priority,
-        retryCount: 0,
-        maxRetries: 3,
-      });
+//       await databaseService.saveJob(job);
+//       await queueService.sendMessage({
+//         jobId,
+//         url,
+//         priority: value.priority,
+//         retryCount: 0,
+//         maxRetries: 3,
+//       });
 
-      io.emit('jobSubmitted', { jobId, url, status: 'queued' });
-      jobIds.push(jobId);
-    }
+//       io.emit('jobSubmitted', { jobId, url, status: 'queued' });
+//       jobIds.push(jobId);
+//     }
 
-    res.status(201).json({ jobIds, status: 'queued', count: jobIds.length });
-  } catch (error) {
-    const errorMessage = `Failed to submit bulk URLs: ${error.message}`;
-    logger.error(errorMessage, error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+//     res.status(201).json({ jobIds, status: 'queued', count: jobIds.length });
+//   } catch (error) {
+//     const errorMessage = `Failed to submit bulk URLs: ${error.message}`;
+//     logger.error(errorMessage, error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
 
 // Get job status
-router.get('/jobs/:jobId', async (req, res) => {
-  try {
-    const job = await databaseService.getJob(req.params.jobId);
-    if (!job) {
-      return res.status(404).json({ error: 'Job not found' });
-    }
+// router.get('/jobs/:jobId', async (req, res) => {
+//   try {
+//     const job = await databaseService.getJob(req.params.jobId);
+//     if (!job) {
+//       return res.status(404).json({ error: 'Job not found' });
+//     }
 
-    res.json(job);
-  } catch (error) {
-    const errorMessage = `Failed to get job status for id ${req.params.jobId}: ${error.message}`;
-    logger.error(errorMessage, error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+//     res.json(job);
+//   } catch (error) {
+//     const errorMessage = `Failed to get job status for id ${req.params.jobId}: ${error.message}`;
+//     logger.error(errorMessage, error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
 
 // Get scraped content
-router.get('/data/:contentId', async (req, res) => {
-  try {
-    const content = await databaseService.getScrapedContent(req.params.contentId);
-    if (!content) {
-      return res.status(404).json({ error: 'Content not found' });
-    }
+// router.get('/data/:contentId', async (req, res) => {
+//   try {
+//     const content = await databaseService.getScrapedContent(req.params.contentId);
+//     if (!content) {
+//       return res.status(404).json({ error: 'Content not found' });
+//     }
 
-    res.json(content);
-  } catch (error) {
-    const errorMessage = `Failed to get scraped content for id ${req.params.contentId}: ${error.message}`;
-    logger.error(errorMessage, error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+//     res.json(content);
+//   } catch (error) {
+//     const errorMessage = `Failed to get scraped content for id ${req.params.contentId}: ${error.message}`;
+//     logger.error(errorMessage, error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
 
 // Get recent jobs
 // router.get('/jobs', async (req, res) => {
