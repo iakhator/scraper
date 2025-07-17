@@ -1,5 +1,6 @@
 export interface ScrapedContent {
   PK: string;
+  SK: string;
   id: string;
   url: string;
   title?: string;
@@ -17,6 +18,8 @@ export interface ScrapedContent {
 }
 
 export interface ScrapeJob {
+  PK: string,
+  SK: string,
   id: string;
   url: string;
   priority: 'low' | 'medium' | 'high';

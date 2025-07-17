@@ -1,2 +1,2 @@
-export { configureAWS, globalConfig } from "./config";
-export * as aws from "./clients/index";
+export { config, dynamoClient, sqsClient } from "./config";
+export { dynamodb, sqs } from "./clients/index";

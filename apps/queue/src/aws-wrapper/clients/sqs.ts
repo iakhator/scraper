@@ -9,32 +9,9 @@ import {
   SQSClientConfig,
   SQSServiceException
 } from "@aws-sdk/client-sqs";
-import { globalConfig } from "../config";
+import { sqsClient } from "../config";
 import logger from "../../utils/logger"; 
 
-// Singleton client instance
-let sqsClient: SQSClient;
-
-const DEFAULT_CONFIG: SQSClientConfig = {
-  region: globalConfig.region,
-  maxAttempts: 3, 
-  retryMode: "standard",
-};
-
-/**
- * Initialize and return the SQS client (singleton pattern)
- */
-function getClient(): SQSClient {
-  if (!sqsClient) {
-    sqsClient = new SQSClient({
-      ...DEFAULT_CONFIG,
-      ...(globalConfig.sqs || {}), 
-    });
-    
-    logger.debug("SQS client initialized", { region: DEFAULT_CONFIG.region });
-  }
-  return sqsClient;
-}
 
 /**
  * Send message to SQS queue with error handling
@@ -42,11 +19,10 @@ function getClient(): SQSClient {
 export async function sendMessage(
   params: SendMessageCommandInput
 ): Promise<{ messageId: string }> {
-  const client = getClient();
   const command = new SendMessageCommand(params);
   
   try {
-    const result = await client.send(command);
+    const result = await sqsClient.send(command);
     logger.debug("Message sent successfully", { 
       messageId: result.MessageId,
       queueUrl: params.QueueUrl 
@@ -68,7 +44,6 @@ export async function sendMessage(
 export async function receiveMessages(
   params: ReceiveMessageCommandInput
 ): Promise<{ messages: Message[] }> {
-  const client = getClient();
   const command = new ReceiveMessageCommand({
     WaitTimeSeconds: 20, 
     MaxNumberOfMessages: 10, 
@@ -76,7 +51,7 @@ export async function receiveMessages(
   });
 
   try {
-    const result = await client.send(command);
+    const result = await sqsClient.send(command);
     logger.debug("Messages received", { 
       count: result.Messages?.length || 0,
       queueUrl: params.QueueUrl 
@@ -97,11 +72,10 @@ export async function receiveMessages(
 export async function deleteMessage(
   params: DeleteMessageCommandInput
 ): Promise<void> {
-  const client = getClient();
   const command = new DeleteMessageCommand(params);
 
   try {
-    await client.send(command);
+    await sqsClient.send(command);
     logger.debug("Message deleted successfully", { 
       receiptHandle: params.ReceiptHandle,
       queueUrl: params.QueueUrl 

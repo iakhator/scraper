@@ -1,30 +1,36 @@
-import { aws, globalConfig } from "../aws-wrapper";
+import { DynamoDBClient, PutItemCommand, GetItemCommand, UpdateItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb';
+import { config } from "../aws-wrapper";
+
 import { ScrapedContent, ScrapeJob , DynamoReturn} from '../types';
 import logger from '../utils/logger';
 
+// Define the interface for DynamoDB operations
+interface IDynamoDBOperations {
+  putItem: (tableName: string, item: any, options?: { conditionExpression?: string }) => Promise<DynamoReturn<any>>;
+  getItem: (tableName: string, key: any, options?: { consistentRead?: boolean }) => Promise<DynamoReturn<any>>;
+}
+
 export class DatabaseService {
-  private scrapedContentTable: string;
-  private scrapeJobsTable: string;
+  private tableName: string;
+  private dynamodb: IDynamoDBOperations;
+  private reservedKeywords = ['PK', 'SK', 'createdAt'];
 
-  constructor() {
-    this.scrapedContentTable = globalConfig.scrapedContentTable as string;
-    this.scrapeJobsTable = globalConfig.scrapeJobsTable as string;
+  constructor(dynamodb: IDynamoDBOperations) {
+    this.tableName = config.tableName as string;
+    this.dynamodb = dynamodb;
+    
 
-    if (!this.scrapedContentTable || !this.scrapeJobsTable) {
+    if (!this.tableName) {
       throw new Error('DynamoDB table names are not configured');
     }
     logger.debug('DatabaseService initialized', {
-      scrapedContentTable: this.scrapedContentTable,
-      scrapeJobsTable: this.scrapeJobsTable,
+      tableName: this.tableName,
     });
   }
 
   async saveScrapedContent(content: ScrapedContent): Promise<DynamoReturn<ScrapedContent>> {
-      const item = {
-      ...content,
-      createdAt: content.createdAt || new Date().toISOString(),
-    };
-      const result = await aws.dynamodb.putItem(this.scrapedContentTable, item, {
+     
+      const result = await this.dynamodb.putItem(this.tableName, content, {
         conditionExpression: 'attribute_not_exists(PK)',
       });
 
@@ -36,11 +42,11 @@ export class DatabaseService {
       }
 
       logger.info(`Scraped content saved: ${content.id}`);
-      return {data: item}
+      return {data: content}
   }
 
   async getScrapedContent(id: string): Promise<DynamoReturn<ScrapedContent | null>> {
-      const result = await aws.dynamodb.getItem(this.scrapedContentTable, {PK: id});
+      const result = await this.dynamodb.getItem(this.tableName, {PK: `CONTENT#${id}`, SK: 'CONTENT'});
       if (result.error) {
         logger.error('Failed to get scraped content', {
           error: result.error.message,
@@ -58,22 +64,25 @@ export class DatabaseService {
       return result.data;
   }
 
-  // async saveJob(job: ScrapeJob): Promise<void> {
-  //   try {
-  //     await this.dynamodbWithRetry
-  //       .put({
-  //         TableName: config.scrapeJobsTable,
-  //         Item: job,
-  //       })
-  //       .promise();
+  async saveJob(content: ScrapedContent): Promise<DynamoReturn<ScrapedContent>> {
+      const item = {
+      ...content,
+      createdAt: content.createdAt || new Date().toISOString(),
+    };
+      const result = await this.dynamodb.putItem(this.tableName, item, {
+        conditionExpression: 'attribute_not_exists(PK)',
+      });
 
-  //     logger.info(`Job saved: ${job.id}`);
-  //   } catch (error: any) {
-  //     const errorMessage = `Failed to save job for id ${job.id}: ${error.message}`;
-  //     logger.error(errorMessage, error);
-  //     throw new Error(errorMessage);
-  //   }
-  // }
+      if(result.error) {
+        logger.error('Failed to create job', {
+          error: result.error.message,
+        });
+        return { error: result.error };
+      }
+
+      logger.info(`Job saved: ${content.id}`);
+      return {data: item}
+  }
 
   // async updateJob(id: string, updates: Partial<ScrapeJob>): Promise<void> {
   //   try {

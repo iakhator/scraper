@@ -2,20 +2,14 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import { configureAWS, aws } from "./aws-wrapper";
+import { dynamodb } from "./aws-wrapper";
 import logger from "./utils/logger";
 import { DatabaseService } from './services/databaseService';
+import { v4 as uuidv4 } from 'uuid';
 
-const dbService = new DatabaseService();
+const dbService = new DatabaseService(dynamodb);
 
 dotenv.config()
-
-const region = process.env.AWS_REGION || "us-east-2";
-configureAWS({
-  region,
-  s3: { region },
-  dynamodb: { region }
-});
 
 const app = express()
 app.use(cors())
@@ -25,13 +19,15 @@ app.use(express.json())
 app.get('/api', async(req, res) => {
   logger.info("API endpoint called", { endpoint: "/api" });
   
-  const item = await dbService.getScrapedContent("123");
-  
+  const item = await dbService.getScrapedContent("c4cbfbb2-7670-4d23-81b2-844b02873574");
+  // const jobId = uuidv4();
   // const item = await dbService.saveScrapedContent({
-  //   PK: "123",
+  //   PK: `CONTENT#${jobId}`,
+  //   SK: "CONTENT",
   //   url: "https://example.com",
   //   title: "Sample content",
-  //   id: "123"
+  //   id: jobId,
+  //   createdAt: new Date().toISOString()
   // });
 
   if(item.error) {

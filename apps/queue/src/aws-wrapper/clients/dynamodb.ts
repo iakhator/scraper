@@ -1,15 +1,12 @@
 import {
-  DynamoDBClient,
   GetItemCommand,
   PutItemCommand,
   UpdateItemCommand,
   DeleteItemCommand,
-  BatchWriteItemCommand,
-  DynamoDBClientConfig,
   DynamoDBServiceException,
 } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
-import { globalConfig } from "../config";
+import { dynamoClient } from "../config";
 import logger from "../../utils/logger";
 
 // types definition
@@ -17,31 +14,12 @@ type DynamoItem = Record<string, any>;
 type DynamoKey = Record<string, any>;
 type DynamoReturn<T> = { data?: T; error?: Error };
 
-// config
-const DEFAULT_CONFIG: DynamoDBClientConfig = {
-  region: globalConfig.region,
-  maxAttempts: 3,
-  retryMode: "standard",
-  ...(globalConfig.dynamodb || {}), 
-};
-
-let dynamoClient: DynamoDBClient;
-
-function getClient(): DynamoDBClient {
-  if (!dynamoClient) {
-    dynamoClient = new DynamoDBClient(DEFAULT_CONFIG);
-    logger.debug("DynamoDB client initialized", { region: DEFAULT_CONFIG.region });
-  }
-  return dynamoClient;
-}
-
-
 export async function putItem(
   tableName: string,
   item: DynamoItem,
   options?: { conditionExpression?: string }
 ): Promise<DynamoReturn<DynamoItem>> {
-  const client = getClient();
+
   const params = {
     TableName: tableName,
     Item: marshall(item, { removeUndefinedValues: true }),
@@ -49,7 +27,7 @@ export async function putItem(
   };
 
   try {
-    const { Attributes } = await client.send(new PutItemCommand(params));
+    const { Attributes } = await dynamoClient.send(new PutItemCommand(params));
     logger.debug("DynamoDB putItem success", { tableName, itemId: item.id });
     return { data: Attributes ? unmarshall(Attributes) : undefined };
   } catch (error) {
@@ -64,7 +42,7 @@ export async function getItem(
   key: DynamoKey,
   options?: { consistentRead?: boolean }
 ): Promise<DynamoReturn<DynamoItem>> {
-  const client = getClient();
+  // const client = getClient();
   const params = {
     TableName: tableName,
     Key: marshall(key),
@@ -72,7 +50,7 @@ export async function getItem(
   };
 
   try {
-    const { Item } = await client.send(new GetItemCommand(params));
+    const { Item } = await dynamoClient.send(new GetItemCommand(params));
     if (!Item) {
       logger.debug("DynamoDB getItem not found", { tableName, key });
       return { data: undefined };
@@ -93,7 +71,7 @@ export async function updateItem(
   expressionAttributeValues: Record<string, any>,
   options?: { conditionExpression?: string; returnValues?:  "NONE" | "ALL_OLD" | "UPDATED_OLD" | "ALL_NEW" | "UPDATED_NEW" }
 ): Promise<DynamoReturn<DynamoItem>> {
-  const client = getClient();
+  // const client = getClient();
   const params = {
     TableName: tableName,
     Key: marshall(key),
@@ -104,7 +82,7 @@ export async function updateItem(
   };
 
   try {
-    const { Attributes } = await client.send(new UpdateItemCommand(params));
+    const { Attributes } = await dynamoClient.send(new UpdateItemCommand(params));
     logger.debug("DynamoDB updateItem success", { tableName, key });
     return { data: Attributes ? unmarshall(Attributes) : undefined };
   } catch (error) {
@@ -119,7 +97,7 @@ export async function deleteItem(
   key: DynamoKey,
   options?: { conditionExpression?: string; returnValues?: "NONE" | "ALL_OLD" }
 ): Promise<DynamoReturn<DynamoItem>> {
-  const client = getClient();
+  // const client = getClient();
   const params = {
     TableName: tableName,
     Key: marshall(key),
@@ -128,7 +106,7 @@ export async function deleteItem(
   };
 
   try {
-    const { Attributes } = await client.send(new DeleteItemCommand(params));
+    const { Attributes } = await dynamoClient.send(new DeleteItemCommand(params));
     logger.debug("DynamoDB deleteItem success", { tableName, key });
     return { data: Attributes ? unmarshall(Attributes) : undefined };
   } catch (error) {
