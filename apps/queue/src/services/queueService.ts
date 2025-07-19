@@ -6,7 +6,7 @@ import logger from '../utils/logger';
 
 interface ISQSOperations{
   sendMessage: (message: QueueMessage) => Promise<{ messageId: string }>,
-  receiveMessages: (message: ReceiveMessageCommandInput) => Promise<{ messages: Message[] }>,
+  receiveMessages: (maxMessages?: number) => Promise<{ messages: Message[] }>,
   deleteMessage: (receiptHandle: DeleteMessageCommandInput) => Promise<void>
 }
 
@@ -30,22 +30,16 @@ export class QueueService {
     }
   }
 
-  // async receiveMessages(maxMessages: number = env.QUEUE_BATCH_SIZE): Promise<AWS.SQS.Message[]> {
-  //   try {
-  //     const result = await this.client.send(new ReceiveMessageCommand({
-  //       QueueUrl: config.queueUrl,
-  //       MaxNumberOfMessages: maxMessages,
-  //       WaitTimeSeconds: 20,
-  //       VisibilityTimeout: 300,
-  //     }));
-
-  //     return result.Messages || [];
-  //   } catch (error) {
-  //     const errorMessage = `Failed to receive messages from queue: ${error.message}`;
-  //     logger.error(errorMessage, error);
-  //     throw new Error(errorMessage);
-  //   }
-  // }
+  async receiveMessages(maxMessages: number): Promise<Message[]> {
+    try {
+      const result = await this.sqs.receiveMessages(maxMessages);
+      return result.messages || [];
+    } catch (error: any) {
+      const errorMessage = `Failed to receive messages from queue: ${error.message}`;
+      logger.error(errorMessage, error);
+      throw new Error(errorMessage);
+    }
+  }
 
   // async deleteMessage(receiptHandle: string): Promise<void> {
   //   try {

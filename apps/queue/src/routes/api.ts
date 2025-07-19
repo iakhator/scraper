@@ -53,46 +53,48 @@ router.post('/urls', async (req, res) => {
 });
 
 // Submit bulk URLs
-// router.post('/urls/bulk', async (req, res) => {
-//   try {
-//     const { error, value } = bulkUrlSchema.validate(req.body);
-//     if (error) {
-//       return res.status(400).json({ error: error.details[0].message });
-//     }
+router.post('/urls/bulk', async (req, res) => {
+  try {
+    const { error, value } = bulkUrlSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
 
-//     const jobIds = [];
-//     for (const url of value.urls) {
-//       const jobId = uuidv4();
-//       const job: ScrapeJob = {
-//         id: jobId,
-//         url,
-//         priority: value.priority,
-//         status: 'queued',
-//         createdAt: new Date().toISOString(),
-//         retryCount: 0,
-//         maxRetries: 3,
-//       };
+    const jobIds = [];
+    for (const url of value.urls) {
+      const jobId = uuidv4();
+      const job: ScrapeJob = {
+        PK: `JOB#${jobId}`,
+        SK: 'JOB',
+        id: jobId,
+        url,
+        priority: value.priority,
+        status: 'queued',
+        createdAt: new Date().toISOString(),
+        retryCount: 0,
+        maxRetries: 3,
+      };
 
-//       await databaseService.saveJob(job);
-//       await queueService.sendMessage({
-//         jobId,
-//         url,
-//         priority: value.priority,
-//         retryCount: 0,
-//         maxRetries: 3,
-//       });
+      await databaseService.saveJob(job);
+      await queueService.sendMessage({
+        jobId,
+        url,
+        priority: value.priority,
+        retryCount: 0,
+        maxRetries: 3,
+      });
 
-//       io.emit('jobSubmitted', { jobId, url, status: 'queued' });
-//       jobIds.push(jobId);
-//     }
+      // io.emit('jobSubmitted', { jobId, url, status: 'queued' });
+      jobIds.push(jobId);
+    }
 
-//     res.status(201).json({ jobIds, status: 'queued', count: jobIds.length });
-//   } catch (error) {
-//     const errorMessage = `Failed to submit bulk URLs: ${error.message}`;
-//     logger.error(errorMessage, error);
-//     res.status(500).json({ error: 'Internal server error' });
-//   }
-// });
+    res.status(201).json({ jobIds, status: 'queued', count: jobIds.length });
+  } catch (error: any) {
+    const errorMessage = `Failed to submit bulk URLs: ${error.message}`;
+    logger.error(errorMessage, { error});
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Get job status
 // router.get('/jobs/:jobId', async (req, res) => {

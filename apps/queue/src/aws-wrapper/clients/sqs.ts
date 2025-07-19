@@ -48,25 +48,25 @@ export async function sendMessage(
  * Receive messages from SQS queue with error handling
  */
 export async function receiveMessages(
-  message: ReceiveMessageCommandInput
+  message: number
 ): Promise<{ messages: Message[] }> {
   const command = new ReceiveMessageCommand({
+    QueueUrl: config.queueUrl,
     WaitTimeSeconds: 20, 
-    MaxNumberOfMessages: config.batchMessages, 
-    ...message, 
+    MaxNumberOfMessages: message, 
   });
 
   try {
     const result = await sqsClient.send(command);
     logger.debug("Messages received", { 
       count: result.Messages?.length || 0,
-      queueUrl: message.QueueUrl 
+      queueUrl: config.queueUrl 
     });
     return { messages: result.Messages || [] };
   } catch (error) {
     logger.error("Failed to receive SQS messages", { 
       error,
-      queueUrl: message.QueueUrl 
+      queueUrl: config.queueUrl 
     });
     throw wrapSqsError(error, "receiveMessages");
   }
