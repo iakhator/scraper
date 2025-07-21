@@ -24,27 +24,29 @@ RUN addgroup -g 1001 -S nodejs && \
 FROM base AS deps
 WORKDIR /app
 
-# Copy authentication and package files
-COPY .npmrc ./
+# Copy package files
 COPY apps/worker/package*.json ./
 
 # Install production dependencies
 ARG GITHUB_TOKEN
-ENV GITHUB_TOKEN=$GITHUB_TOKEN
-RUN npm ci --only=production && \
-    npm cache clean --force
+RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
+    echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
+    npm ci --only=production && \
+    npm cache clean --force && \
+    rm .npmrc
 
 # Development stage
 FROM base AS dev
 ENV NODE_ENV=development
 WORKDIR /app
 
-# Copy auth and install all dependencies
-COPY .npmrc ./
+# Copy package files and install all dependencies
 COPY apps/worker/package*.json ./
 ARG GITHUB_TOKEN
-ENV GITHUB_TOKEN=$GITHUB_TOKEN
-RUN npm ci
+RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
+    echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
+    npm ci && \
+    rm .npmrc
 
 # Copy source code
 COPY apps/worker/src ./src
@@ -57,15 +59,16 @@ CMD ["npm", "run", "dev"]
 FROM base AS builder
 WORKDIR /app
 
-# Copy auth and dependencies
-COPY .npmrc ./
+# Copy package files and tsconfig
 COPY apps/worker/package*.json ./
 COPY apps/worker/tsconfig.json ./
 
 # Install all dependencies (including dev)
 ARG GITHUB_TOKEN
-ENV GITHUB_TOKEN=$GITHUB_TOKEN
-RUN npm ci
+RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
+    echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
+    npm ci && \
+    rm .npmrc
 
 # Copy source and build
 COPY apps/worker/src ./src

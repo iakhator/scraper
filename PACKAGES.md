@@ -2,6 +2,12 @@
 
 This project now uses GitHub Packages for private npm distribution. Here's how to use the packages:
 
+## ✅ Current Status
+- **All packages published** to GitHub Packages registry
+- **Dependencies updated** to use published versions (`^1.0.1`)
+- **Dockerfiles updated** to pull from GitHub Packages
+- **Local development** still works with file: references when needed
+
 ## Authentication Setup
 
 1. Create a Personal Access Token (PAT) with `packages:read` permission
