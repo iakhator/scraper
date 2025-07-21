@@ -1,2 +1,2 @@
 // Re-export all types from the shared types package
-export * from '@scraper/types';
+export * from '@iakhator/scraper-types';

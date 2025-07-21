@@ -7,8 +7,8 @@ import {
 } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { dynamoClient } from "../config";
-import { DynamoItem, DynamoKey, DynamoReturn } from '../types';
-import { logger } from '@scraper/logger';
+import { DynamoItem, DynamoKey, DynamoReturn } from '@iakhator/scraper-types';
+import { logger } from '@iakhator/scraper-logger';
 
 export async function putItem(
   tableName: string,

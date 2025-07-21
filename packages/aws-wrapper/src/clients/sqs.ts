@@ -8,8 +8,8 @@ import {
   SQSServiceException
 } from "@aws-sdk/client-sqs";
 import { config, sqsClient } from "../config";
-import { QueueMessage, Message } from "../types";
-import { logger } from '@scraper/logger';
+import { QueueMessage, Message } from "@iakhator/scraper-types";
+import { logger } from '@iakhator/scraper-logger';
 
 /**
  * Send message to SQS queue with error handling
