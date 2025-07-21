@@ -25,7 +25,8 @@ RUN npm install
 FROM base AS dev
 ENV NODE_ENV=development
 WORKDIR /app/apps/queue
-COPY apps/queue/ ./
+COPY apps/queue/src ./src
+COPY apps/queue/tsconfig.json ./tsconfig.json
 EXPOSE 3001
 CMD ["npm", "run", "dev"]
 
@@ -33,6 +34,7 @@ CMD ["npm", "run", "dev"]
 FROM base AS build
 WORKDIR /app/apps/queue
 COPY apps/queue/src ./src
+COPY apps/queue/tsconfig.json ./tsconfig.json
 RUN npm run build
 
 # Production stage
