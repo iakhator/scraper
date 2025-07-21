@@ -1,7 +1,7 @@
 import { DeleteMessageCommandInput, ReceiveMessageCommandInput } from '@aws-sdk/client-sqs';
-import { QueueMessage, QueueAttributes, Message } from '@scraper/types';
-import { config } from '@scraper/aws-wrapper';
-import { logger } from '@scraper/logger';
+import { QueueMessage, QueueAttributes, Message } from '@iakhator/scraper-types';
+import { config } from '@iakhator/scraper-aws-wrapper';
+import { logger } from '@iakhator/scraper-logger';
 
 // Custom type for receive message parameters (QueueUrl is handled automatically by the SQS client)
 type ReceiveMessageParams = Omit<ReceiveMessageCommandInput, 'QueueUrl'>;

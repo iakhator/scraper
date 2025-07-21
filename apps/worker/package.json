@@ -18,10 +18,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@scraper/aws-wrapper": "file:../../packages/aws-wrapper",
-    "@scraper/core": "file:../../packages/core",
-    "@scraper/logger": "file:../../packages/logger",
-    "@scraper/types": "file:../../packages/types",
+    "@iakhator/scraper-aws-wrapper": "file:../../packages/aws-wrapper",
+    "@iakhator/scraper-core": "file:../../packages/core",
+    "@iakhator/scraper-logger": "file:../../packages/logger",
+    "@iakhator/scraper-types": "file:../../packages/types",
     "dotenv": "^17.2.0",
     "envalid": "^8.1.0"
   },

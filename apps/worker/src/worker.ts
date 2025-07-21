@@ -1,8 +1,8 @@
-import { QueueService, DatabaseService, ScraperService } from '@scraper/core';
-import { logger } from '@scraper/logger';
-import { ScrapedContent, QueueMessage, Message, ScrapeJob } from '@scraper/types';
-import * as sqs from '@scraper/aws-wrapper';
-import * as dynamodb from '@scraper/aws-wrapper';
+import { QueueService, DatabaseService, ScraperService } from '@iakhator/scraper-core';
+import { logger } from '@iakhator/scraper-logger';
+import { ScrapedContent, QueueMessage, Message, ScrapeJob } from '@iakhator/scraper-types';
+import * as sqs from '@iakhator/scraper-aws-wrapper';
+import * as dynamodb from '@iakhator/scraper-aws-wrapper';
 
 export class Worker {
   private queueService: QueueService;

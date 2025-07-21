@@ -2,6 +2,8 @@
 
 A high-performance, scalable web scraping system built with **Node.js**, **TypeScript**, **AWS SQS**, **DynamoDB**, and **Docker**. Features async job processing, intelligent scraping strategies, and comprehensive monitoring.
 
+> 📦 **Private Packages**: This project uses GitHub Packages for private npm distribution. See [PACKAGES.md](./PACKAGES.md) for setup instructions.
+
 ![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8+-blue.svg)
 ![AWS](https://img.shields.io/badge/AWS-SQS%20%7C%20DynamoDB-orange.svg)

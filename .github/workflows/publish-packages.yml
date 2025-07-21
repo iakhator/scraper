@@ -1,0 +1,69 @@
+name: Publish Packages to GitHub Packages
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'packages/**'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@iakhator'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd packages/types && npm install
+          cd ../logger && npm install
+          cd ../aws-wrapper && npm install  
+          cd ../core && npm install
+
+      - name: Build packages
+        run: |
+          cd packages/types && npm run build
+          cd ../logger && npm run build  
+          cd ../aws-wrapper && npm run build
+          cd ../core && npm run build
+
+      - name: Publish @iakhator/scraper-types
+        run: |
+          cd packages/types
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish @iakhator/scraper-logger
+        run: |
+          cd packages/logger
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish @iakhator/scraper-aws-wrapper
+        run: |
+          cd packages/aws-wrapper
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish @iakhator/scraper-core
+        run: |
+          cd packages/core
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

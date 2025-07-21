@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { QueueService, DatabaseService, urlSchema, bulkUrlSchema } from '@scraper/core';
-import * as dynamodb from '@scraper/aws-wrapper';
-import * as sqs from '@scraper/aws-wrapper';
-import { createScraperLogger } from '@scraper/logger';
-import { ScrapeJob } from '@scraper/types';
+import { QueueService, DatabaseService, urlSchema, bulkUrlSchema } from '@iakhator/scraper-core';
+import * as dynamodb from '@iakhator/scraper-aws-wrapper';
+import * as sqs from '@iakhator/scraper-aws-wrapper';
+import { createScraperLogger } from '@iakhator/scraper-logger';
+import { ScrapeJob } from '@iakhator/scraper-types';
 // import { urlSchema, bulkUrlSchema } from '../utils/validators';
 
 const logger = createScraperLogger({ service: 'queue-api' });

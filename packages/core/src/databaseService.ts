@@ -1,6 +1,6 @@
-import { config } from '@scraper/aws-wrapper';
-import { ScrapedContent, ScrapeJob, DynamoReturn, DynamoKey, DynamoItem } from '@scraper/types';
-import { logger } from '@scraper/logger';
+import { config } from '@iakhator/scraper-aws-wrapper';
+import { ScrapedContent, ScrapeJob, DynamoReturn, DynamoKey, DynamoItem } from '@iakhator/scraper-types';
+import { logger } from '@iakhator/scraper-logger';
 
 interface IDynamoDBOperations {
   putItem: (tableName: string, item: any, options?: { conditionExpression?: string }) => Promise<DynamoReturn<any>>;

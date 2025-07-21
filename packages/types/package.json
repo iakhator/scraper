@@ -1,9 +1,17 @@
 {
-  "name": "@scraper/types",
+  "name": "@iakhator/scraper-types",
   "version": "1.0.0",
-  "description": "Shared TypeScript types for the scraper project",
+  "description": "Shared TypeScript types for scraper project",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iakhator/scraper.git",
+    "directory": "packages/types"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch"

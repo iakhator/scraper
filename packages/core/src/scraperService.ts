@@ -1,9 +1,9 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { Cluster } from 'puppeteer-cluster';
-import { config } from '@scraper/aws-wrapper';
-import { ScrapedContent } from '@scraper/types';
-import { logger } from '@scraper/logger';
+import { config } from '@iakhator/scraper-aws-wrapper';
+import { ScrapedContent } from '@iakhator/scraper-types';
+import { logger } from '@iakhator/scraper-logger';
 import { urlSchema } from './validators';
 
 export class ScraperService {

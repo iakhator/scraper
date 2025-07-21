@@ -1,5 +1,5 @@
 import { Worker } from './worker';
-import { logger } from '@scraper/logger';
+import { logger } from '@iakhator/scraper-logger';
 
 // Increase the max listeners to avoid warnings from multiple loggers
 process.setMaxListeners(20);
