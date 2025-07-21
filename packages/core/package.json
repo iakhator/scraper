@@ -19,9 +19,9 @@
   },
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.645.0",
-    "@iakhator/scraper-aws-wrapper": "file:../aws-wrapper",
-    "@iakhator/scraper-logger": "file:../logger",
-    "@iakhator/scraper-types": "file:../types",
+    "@iakhator/scraper-aws-wrapper": "^1.0.0",
+    "@iakhator/scraper-logger": "^1.0.0",
+    "@iakhator/scraper-types": "^1.0.0",
     "axios": "^1.7.7",
     "cheerio": "^1.0.0",
     "dotenv": "^17.2.0",

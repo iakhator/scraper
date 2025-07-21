@@ -40,3 +40,6 @@ apps/queue/.env.*
 README.md
 docs/
 node_modules
+
+# Authentication files
+.npmrc
