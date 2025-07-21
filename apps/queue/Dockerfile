@@ -1,47 +1,64 @@
-# Base stage - common dependencies
-FROM node:22-alpine AS base
+# Base stage - install dependencies from GitHub Packages
+FROM node:22-alpine AS deps
 WORKDIR /app
 
-# Copy packages and build them
-COPY packages/ ./packages/
-WORKDIR /app/packages/types
-RUN npm ci && npm run build
+# Copy authentication and package files
+COPY .npmrc ./
+COPY apps/queue/package*.json ./
 
-WORKDIR /app/packages/logger  
-RUN npm ci && npm run build
-
-WORKDIR /app/packages/aws-wrapper
-RUN npm ci && npm run build
-
-WORKDIR /app/packages/core
-RUN npm ci && npm run build
-
-# Install queue app dependencies
-COPY apps/queue/package.json /app/apps/queue/package.json
-WORKDIR /app/apps/queue
-RUN npm install
+# Install dependencies from GitHub Packages
+ARG GITHUB_TOKEN
+ENV GITHUB_TOKEN=$GITHUB_TOKEN
+RUN npm ci --only=production
 
 # Development stage
-FROM base AS dev
+FROM node:22-alpine AS dev
+WORKDIR /app
 ENV NODE_ENV=development
-WORKDIR /app/apps/queue
-COPY apps/queue/ ./
+
+# Copy auth and install all dependencies
+COPY .npmrc ./
+COPY apps/queue/package*.json ./
+ARG GITHUB_TOKEN
+ENV GITHUB_TOKEN=$GITHUB_TOKEN
+RUN npm ci
+
+# Copy source code
+COPY apps/queue/src ./src
+COPY apps/queue/tsconfig.json ./
+
 EXPOSE 3001
 CMD ["npm", "run", "dev"]
 
-# Build stage for production
-FROM base AS build
-WORKDIR /app/apps/queue
-COPY apps/queue/ ./
+# Build stage - compile TypeScript
+FROM node:22-alpine AS builder
+WORKDIR /app
+
+# Copy auth and dependencies
+COPY .npmrc ./
+COPY apps/queue/package*.json ./
+COPY apps/queue/tsconfig.json ./
+
+# Install all dependencies (including dev)
+ARG GITHUB_TOKEN
+ENV GITHUB_TOKEN=$GITHUB_TOKEN
+RUN npm ci
+
+# Copy source and build
+COPY apps/queue/src ./src
 RUN npm run build
 
 # Production stage
 FROM node:22-alpine AS prod
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=build /app/apps/queue/dist ./dist
-COPY --from=build /app/apps/queue/package.json ./
-COPY --from=build /app/apps/queue/node_modules ./node_modules
-COPY --from=build /app/packages ./packages
+
+# Copy production dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package*.json ./
+
+# Copy built application
+COPY --from=builder /app/dist ./dist
+
 EXPOSE 3001
 CMD ["node", "dist/index.js"]

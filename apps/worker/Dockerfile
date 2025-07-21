@@ -18,31 +18,35 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 
 # Add non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
-  adduser -S worker -u 1001
+  adduser -S worker -u 1001 -G nodejs
 
-# Copy packages and build them
-COPY packages/ ./packages/
-WORKDIR /app/packages/types
-RUN npm ci && npm run build
+# Dependencies stage - install from GitHub Packages
+FROM base AS deps
+WORKDIR /app
 
-WORKDIR /app/packages/logger  
-RUN npm ci && npm run build
+# Copy authentication and package files
+COPY .npmrc ./
+COPY apps/worker/package*.json ./
 
-WORKDIR /app/packages/aws-wrapper
-RUN npm ci && npm run build
-
-WORKDIR /app/packages/core
-RUN npm ci && npm run build
-
-# Install worker app dependencies
-COPY apps/worker/package.json /app/apps/worker/package.json
-WORKDIR /app/apps/worker
-RUN npm install
+# Install production dependencies
+ARG GITHUB_TOKEN
+ENV GITHUB_TOKEN=$GITHUB_TOKEN
+RUN npm ci --only=production && \
+    npm cache clean --force
 
 # Development stage
 FROM base AS dev
 ENV NODE_ENV=development
-WORKDIR /app/apps/worker
+WORKDIR /app
+
+# Copy auth and install all dependencies
+COPY .npmrc ./
+COPY apps/worker/package*.json ./
+ARG GITHUB_TOKEN
+ENV GITHUB_TOKEN=$GITHUB_TOKEN
+RUN npm ci
+
+# Copy source code
 COPY apps/worker/src ./src
 COPY apps/worker/tsconfig.json ./tsconfig.json
 RUN chown -R worker:nodejs /app
@@ -50,38 +54,34 @@ USER worker
 CMD ["npm", "run", "dev"]
 
 # Build stage for production
-FROM base AS build
-WORKDIR /app/apps/worker
+FROM base AS builder
+WORKDIR /app
+
+# Copy auth and dependencies
+COPY .npmrc ./
+COPY apps/worker/package*.json ./
+COPY apps/worker/tsconfig.json ./
+
+# Install all dependencies (including dev)
+ARG GITHUB_TOKEN
+ENV GITHUB_TOKEN=$GITHUB_TOKEN
+RUN npm ci
+
+# Copy source and build
 COPY apps/worker/src ./src
-COPY apps/worker/tsconfig.json ./tsconfig.json
 RUN npm run build
 
 # Production stage
-FROM node:22-alpine AS prod
+FROM base AS prod
 WORKDIR /app
+ENV NODE_ENV=production
 
-# Install Chromium and dependencies for production
-RUN apk add --no-cache \
-  chromium \
-  nss \
-  freetype \
-  freetype-dev \
-  harfbuzz \
-  ca-certificates \
-  ttf-freefont
+# Copy production dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package*.json ./
 
-ENV NODE_ENV=production \
-  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-  PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-
-# Add non-root user for production
-RUN addgroup -g 1001 -S nodejs && \
-  adduser -S worker -u 1001
-
-COPY --from=build /app/apps/worker/dist ./dist
-COPY --from=build /app/apps/worker/package.json ./
-COPY --from=build /app/apps/worker/node_modules ./node_modules
-COPY --from=build /app/packages ./packages
+# Copy built application
+COPY --from=builder /app/dist ./dist
 
 RUN chown -R worker:nodejs /app
 USER worker
