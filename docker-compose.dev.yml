@@ -32,6 +32,8 @@ services:
       context: .
       dockerfile: ./apps/worker/Dockerfile
       target: dev
+      args:
+        - GITHUB_TOKEN=${GITHUB_TOKEN}
     environment:
       - NODE_ENV=development
     env_file:
@@ -57,6 +59,8 @@ services:
       context: .
       dockerfile: ./apps/queue/Dockerfile
       target: dev
+      args:
+        - GITHUB_TOKEN=${GITHUB_TOKEN}
     ports:
       - "3001:3001"
     environment:

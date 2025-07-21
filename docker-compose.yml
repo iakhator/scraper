@@ -14,9 +14,11 @@ services:
   queue:
     container_name: scraper-queue
     build:
-      context: ./apps/queue
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./apps/queue/Dockerfile
       target: prod
+      args:
+        - GITHUB_TOKEN=${GITHUB_TOKEN}
     ports:
       - "3001:3001"
     environment:

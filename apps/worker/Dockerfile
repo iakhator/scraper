@@ -31,7 +31,8 @@ COPY apps/worker/package*.json ./
 ARG GITHUB_TOKEN
 RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
     echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
-    npm ci --only=production && \
+    rm -f package-lock.json && \
+    npm install --only=production && \
     npm cache clean --force && \
     rm .npmrc
 
@@ -45,7 +46,8 @@ COPY apps/worker/package*.json ./
 ARG GITHUB_TOKEN
 RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
     echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
-    npm ci && \
+    rm -f package-lock.json && \
+    npm install && \
     rm .npmrc
 
 # Copy source code
@@ -67,7 +69,8 @@ COPY apps/worker/tsconfig.json ./
 ARG GITHUB_TOKEN
 RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
     echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
-    npm ci && \
+    rm -f package-lock.json && \
+    npm install && \
     rm .npmrc
 
 # Copy source and build

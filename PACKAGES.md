@@ -3,6 +3,7 @@
 This project now uses GitHub Packages for private npm distribution. Here's how to use the packages:
 
 ## ✅ Current Status
+
 - **All packages published** to GitHub Packages registry
 - **Dependencies updated** to use published versions (`^1.0.1`)
 - **Dockerfiles updated** to pull from GitHub Packages
@@ -19,6 +20,7 @@ npm config set //npm.pkg.github.com/:_authToken YOUR_PERSONAL_ACCESS_TOKEN
 ```
 
 Or add to your `.npmrc` file:
+
 ```
 @iakhator:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=YOUR_PERSONAL_ACCESS_TOKEN
@@ -54,12 +56,33 @@ Packages are automatically published when changes are pushed to the `main` branc
 
 The Dockerfiles are configured to install packages from GitHub Packages during build. You need to provide your GitHub token:
 
+### Single Service Build
 ```bash
 # For local testing (replace YOUR_TOKEN with actual token)
 docker build --build-arg GITHUB_TOKEN=YOUR_TOKEN -t scraper-queue apps/queue
 
 # For production deployment on Render/etc
 docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t scraper-queue apps/queue
+```
+
+### Docker Compose
+Set the `GITHUB_TOKEN` environment variable, then use Docker Compose:
+
+```bash
+# Set your GitHub token (get from https://github.com/settings/tokens)
+export GITHUB_TOKEN=your_github_token_here
+
+# Development
+docker compose -f docker-compose.dev.yml up --build
+
+# Production  
+docker compose up --build
+```
+
+You can also create a `.env` file (copy from `.env.example`):
+```bash
+cp .env.example .env
+# Edit .env and add your GITHUB_TOKEN
 ```
 
 **Security Note**: The `.npmrc` file is created dynamically during build and removed after installation to avoid persisting the token in the image.
