@@ -50,21 +50,25 @@ For local development, the packages still use `file:` dependencies so you can ma
 
 Packages are automatically published when changes are pushed to the `main` branch in the `packages/` directory. You can also manually trigger publishing via the GitHub Actions workflow.
 
+## Docker Build with GitHub Packages
+
+The Dockerfiles are configured to install packages from GitHub Packages during build. You need to provide your GitHub token:
+
+```bash
+# For local testing (replace YOUR_TOKEN with actual token)
+docker build --build-arg GITHUB_TOKEN=YOUR_TOKEN -t scraper-queue apps/queue
+
+# For production deployment on Render/etc
+docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t scraper-queue apps/queue
+```
+
+**Security Note**: The `.npmrc` file is created dynamically during build and removed after installation to avoid persisting the token in the image.
+
 ## Deployment (Render)
 
 For deployment on Render, you'll need to:
 
 1. Set the `GITHUB_TOKEN` environment variable in your Render service
-2. Add `.npmrc` configuration to your Dockerfile:
+2. The Dockerfile will automatically handle authentication during build
 
-```dockerfile
-# In your Dockerfile
-COPY .npmrc ./
-RUN npm ci
-```
-
-Where `.npmrc` contains:
-```
-@iakhator:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
-```
+**No additional configuration needed** - the Docker build process creates the `.npmrc` file dynamically using the provided `GITHUB_TOKEN` build argument.
