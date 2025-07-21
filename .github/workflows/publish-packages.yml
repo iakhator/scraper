@@ -5,7 +5,13 @@ on:
     branches: [ main ]
     paths: 
       - 'packages/**'
+      - '.github/workflows/publish-packages.yml'
   workflow_dispatch:
+    inputs:
+      force_publish:
+        description: 'Force publish all packages'
+        required: false
+        default: 'false'
 
 jobs:
   publish:
