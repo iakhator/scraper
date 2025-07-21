@@ -33,9 +33,9 @@ export class Worker {
           
           // Configure SQS polling parameters
           const messages = await this.queueService.receiveMessages({
-            MaxNumberOfMessages: 10, // Process up to 10 messages at once
-            WaitTimeSeconds: 20,     // Long polling - wait up to 20 seconds for messages
-            VisibilityTimeout: 300   // 5 minutes to process each message
+            MaxNumberOfMessages: 10,
+            WaitTimeSeconds: 20,  
+            VisibilityTimeout: 300   
           });
           
           const pollDuration = Date.now() - startTime;
