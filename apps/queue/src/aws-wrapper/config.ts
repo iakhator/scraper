@@ -1,6 +1,18 @@
 import {DynamoDBClient, DynamoDBClientConfig } from "@aws-sdk/client-dynamodb";
 import { SQSClient, SQSClientConfig } from "@aws-sdk/client-sqs";
-import { getEnvVar } from "../utils/env";
+import { cleanEnv, str, num, url } from 'envalid';
+
+// Validate environment variables
+const env = cleanEnv(process.env, {
+  AWS_REGION: str({ default: 'us-east-1' }),
+  AWS_ACCESS_KEY_ID: str(),
+  AWS_SECRET_ACCESS_KEY: str(),
+  SQS_QUEUE_URL: url(),
+  SQS_DLQ_URL: url({ default: undefined }),
+  DYNAMODB_TABLE: str({ default: 'scrape_db' }),
+  QUEUE_BATCH_SIZE: num({ default: 10 }),
+  PAGE_TIMEOUT: num({ default: 15000 }),
+});
 
 export interface AWSWrapperConfig {
   dynamodb?: DynamoDBClientConfig;
@@ -8,21 +20,23 @@ export interface AWSWrapperConfig {
   queueUrl?: string;
   dlqUrl?: string;
   tableName?: string;
-  batchMessages?: number
+  batchMessages?: number,
+  pageTimeout?: number
 }
 
 export const config: AWSWrapperConfig = {
-  batchMessages: Number(process.env.QUEUE_BATCH_SIZE) || 10,
-  queueUrl: getEnvVar("SQS_QUEUE_URL") ?? "",
-  dlqUrl: getEnvVar("SQS_DLQ_URL") ?? "",
-  tableName: getEnvVar("DYNAMODB_TABLE") ?? "scrape_db",
+  batchMessages: env.QUEUE_BATCH_SIZE,
+  queueUrl: env.SQS_QUEUE_URL,
+  dlqUrl: env.SQS_DLQ_URL,
+  tableName: env.DYNAMODB_TABLE,
+  pageTimeout: env.PAGE_TIMEOUT,  
 };
 
 const clientConfig = {
-  region: getEnvVar("AWS_REGION") ?? "us-east-2",
+  region: env.AWS_REGION,
   credentials: {
-    accessKeyId: getEnvVar("AWS_ACCESS_KEY_ID"),
-    secretAccessKey: getEnvVar("AWS_SECRET_ACCESS_KEY"),
+    accessKeyId: env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
   },
   maxAttempts: 3,
   retryMode: 'standard',

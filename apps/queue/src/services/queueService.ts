@@ -4,9 +4,12 @@ import { config } from "../aws-wrapper";
 
 import logger from '../utils/logger';
 
+// Custom type for receive message parameters (QueueUrl is handled automatically by the SQS client)
+type ReceiveMessageParams = Omit<ReceiveMessageCommandInput, 'QueueUrl'>;
+
 interface ISQSOperations{
   sendMessage: (message: QueueMessage) => Promise<{ messageId: string }>,
-  receiveMessages: (maxMessages?: number) => Promise<{ messages: Message[] }>,
+  receiveMessages: (params?: ReceiveMessageParams) => Promise<{ messages: Message[] }>,
   deleteMessage: (receiptHandle: DeleteMessageCommandInput) => Promise<void>
 }
 
@@ -30,9 +33,12 @@ export class QueueService {
     }
   }
 
-  async receiveMessages(maxMessages: number): Promise<Message[]> {
+  async receiveMessages(params?: ReceiveMessageParams): Promise<Message[]> {
+    //      params const messages = await queueService.receiveMessages({
+    //         MaxNumberOfMessages: 5
+    //     })
     try {
-      const result = await this.sqs.receiveMessages(maxMessages);
+      const result = await this.sqs.receiveMessages(params);
       return result.messages || [];
     } catch (error: any) {
       const errorMessage = `Failed to receive messages from queue: ${error.message}`;
@@ -41,18 +47,15 @@ export class QueueService {
     }
   }
 
-  // async deleteMessage(receiptHandle: string): Promise<void> {
-  //   try {
-  //     await this.client.send(new DeleteMessageCommand({
-  //       QueueUrl: config.queueUrl,
-  //       ReceiptHandle: receiptHandle,
-  //     }));
-  //   } catch (error) {
-  //     const errorMessage = `Failed to delete message from queue: ${error.message}`;
-  //     logger.error(errorMessage, error);
-  //     throw new Error(errorMessage);
-  //   }
-  // }
+  async deleteMessage(receiptHandle: DeleteMessageCommandInput): Promise<void> {
+    try {
+      await this.sqs.deleteMessage(receiptHandle);
+    } catch (error: any) {
+      const errorMessage = `Failed to delete message from queue: ${error.message}`;
+      logger.error(errorMessage, error);
+      throw new Error(errorMessage);
+    }
+  }
 
 //   async getQueueAttributes(): Promise<QueueAttributes> {
 //     try {

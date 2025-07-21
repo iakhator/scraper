@@ -4,17 +4,16 @@ export interface ScrapedContent {
   id: string;
   url: string;
   title?: string;
-  // content?: string;
-  // metadata?: {
-  //   description?: string;
-  //   keywords?: string[];
-  //   author?: string;
-  //   publishDate?: string;
-  // };
+  content?: string;
+  metadata?: {
+    description?: string;
+    keywords?: string[];
+    author?: string;
+    publishDate?: string;
+  };
+  scrapedAt?: string;
   createdAt?: string;
-  // status?: 'pending' | 'completed' | 'failed';
-  // errorMessage?: string;
-  // processingTime?: number;
+  processingTime?: number;
 }
 
 export interface ScrapeJob {
@@ -28,8 +27,11 @@ export interface ScrapeJob {
   completedAt?: string;
   retryCount: number;
   maxRetries: number;
+  errorMessage?: string;
 }
 
+export type DynamoItem = Record<string, any>;
+export type DynamoKey = Record<string, any>;
 export interface DynamoReturn<T> { data?: T; error?: Error }
 
 
@@ -40,6 +42,7 @@ export interface QueueMessage {
   priority: 'low' | 'medium' | 'high';
   retryCount?: number;
   maxRetries?: number;
+  error?: string;
 }
 export interface QueueAttributes {
   ApproximateNumberOfMessages?: string;

@@ -8,11 +8,7 @@ import {
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { dynamoClient } from "../config";
 import logger from "../../utils/logger";
-
-// types definition
-type DynamoItem = Record<string, any>;
-type DynamoKey = Record<string, any>;
-type DynamoReturn<T> = { data?: T; error?: Error };
+import { DynamoItem, DynamoKey, DynamoReturn } from '../../types'
 
 export async function putItem(
   tableName: string,

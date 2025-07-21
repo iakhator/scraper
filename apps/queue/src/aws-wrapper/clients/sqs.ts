@@ -48,12 +48,13 @@ export async function sendMessage(
  * Receive messages from SQS queue with error handling
  */
 export async function receiveMessages(
-  message: number
+  params?: Omit<ReceiveMessageCommandInput, 'QueueUrl'>
 ): Promise<{ messages: Message[] }> {
   const command = new ReceiveMessageCommand({
     QueueUrl: config.queueUrl,
     WaitTimeSeconds: 20, 
-    MaxNumberOfMessages: message, 
+    MaxNumberOfMessages: config.batchMessages || 10,
+    ...params, // Allow overriding defaults with passed parameters
   });
 
   try {
