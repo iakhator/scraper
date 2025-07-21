@@ -30,3 +30,6 @@ apps/analytics/.env.*
 apps/queue/.env
 apps/queue/.env.*
 !apps/queue/.env.example
+
+README.md
+docs/

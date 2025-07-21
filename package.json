@@ -1,13 +1,33 @@
 {
-  "name": "scraper",
+  "name": "async-web-scraper",
+  "version": "1.0.0",
+  "description": "High-performance async web scraper with AWS SQS and DynamoDB",
   "private": true,
   "workspaces": [
-    "apps/frontend",
-    "apps/backend"
+    "apps/analytics",
+    "apps/queue"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=apps/analytics\" \"npm run dev --workspace=apps/queue\""
+    "dev": "concurrently \"npm run dev --workspace=apps/analytics\" \"npm run dev --workspace=apps/queue\"",
+    "build": "npm run build --workspace=apps/analytics && npm run build --workspace=apps/queue", 
+    "start": "concurrently \"npm run start --workspace=apps/analytics\" \"npm run start --workspace=apps/queue\"",
+    "worker": "npm run worker --workspace=apps/queue",
+    "setup": "./setup.sh",
+    "test-api": "./test-api.sh"
   },
+  "keywords": [
+    "web-scraping",
+    "nodejs",
+    "typescript", 
+    "aws-sqs",
+    "dynamodb",
+    "puppeteer",
+    "cheerio",
+    "async",
+    "queue"
+  ],
+  "author": "iakhator",
+  "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.0.1"
   }
