@@ -4,21 +4,21 @@ WORKDIR /app
 
 # Install Chromium and dependencies for Puppeteer
 RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont
+  chromium \
+  nss \
+  freetype \
+  freetype-dev \
+  harfbuzz \
+  ca-certificates \
+  ttf-freefont
 
 # Set Puppeteer to use system Chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+  PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Add non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S worker -u 1001
+  adduser -S worker -u 1001
 
 # Copy packages and build them
 COPY packages/ ./packages/
@@ -43,7 +43,8 @@ RUN npm install
 FROM base AS dev
 ENV NODE_ENV=development
 WORKDIR /app/apps/worker
-COPY apps/worker/ ./
+COPY apps/worker/src ./src
+COPY apps/worker/tsconfig.json ./tsconfig.json
 RUN chown -R worker:nodejs /app
 USER worker
 CMD ["npm", "run", "dev"]
@@ -51,7 +52,8 @@ CMD ["npm", "run", "dev"]
 # Build stage for production
 FROM base AS build
 WORKDIR /app/apps/worker
-COPY apps/worker/ ./
+COPY apps/worker/src ./src
+COPY apps/worker/tsconfig.json ./tsconfig.json
 RUN npm run build
 
 # Production stage
@@ -60,21 +62,21 @@ WORKDIR /app
 
 # Install Chromium and dependencies for production
 RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont
+  chromium \
+  nss \
+  freetype \
+  freetype-dev \
+  harfbuzz \
+  ca-certificates \
+  ttf-freefont
 
 ENV NODE_ENV=production \
-    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+  PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Add non-root user for production
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S worker -u 1001
+  adduser -S worker -u 1001
 
 COPY --from=build /app/apps/worker/dist ./dist
 COPY --from=build /app/apps/worker/package.json ./
