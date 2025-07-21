@@ -7,6 +7,12 @@ apps/analytics/.cache
 apps/analytics/dist
 apps/queue/dist
 
+# Package build outputs
+packages/aws-wrapper/dist
+packages/logger/dist
+packages/core/dist
+packages/types/dist
+
 # Node dependencies
 apps/analytics/node_modules
 apps/queue/node_modules
