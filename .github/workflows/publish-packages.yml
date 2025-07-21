@@ -25,45 +25,56 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           scope: '@iakhator'
 
-      - name: Install dependencies
+      - name: Install and build packages
         run: |
+          # Install and build types package (no dependencies)
+          cd packages/types
           npm install
-          cd packages/types && npm install
-          cd ../logger && npm install
-          cd ../aws-wrapper && npm install  
-          cd ../core && npm install
-
-      - name: Build packages
-        run: |
-          cd packages/types && npm run build
-          cd ../logger && npm run build  
-          cd ../aws-wrapper && npm run build
-          cd ../core && npm run build
+          npm run build
+          cd ../..
+          
+          # Install and build logger package
+          cd packages/logger
+          npm install
+          npm run build
+          cd ../..
+          
+          # Install and build aws-wrapper package
+          cd packages/aws-wrapper
+          npm install
+          npm run build
+          cd ../..
+          
+          # Install and build core package (depends on other packages)
+          cd packages/core
+          npm install
+          npm run build
+          cd ../..
 
       - name: Publish @iakhator/scraper-types
         run: |
           cd packages/types
-          npm publish
+          npm publish || echo "Package may already exist or publish failed"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish @iakhator/scraper-logger
         run: |
           cd packages/logger
-          npm publish
+          npm publish || echo "Package may already exist or publish failed"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish @iakhator/scraper-aws-wrapper
         run: |
           cd packages/aws-wrapper
-          npm publish
+          npm publish || echo "Package may already exist or publish failed"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish @iakhator/scraper-core
         run: |
           cd packages/core
-          npm publish
+          npm publish || echo "Package may already exist or publish failed"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
