@@ -6,12 +6,14 @@ import dotenv from 'dotenv'
 // Load environment variables FIRST
 dotenv.config()
 
-import { dynamodb, sqs } from "./aws-wrapper";
-import logger from "./utils/logger";
+import * as dynamodb from '@scraper/aws-wrapper';
+import * as sqs from '@scraper/aws-wrapper';
+import { createScraperLogger } from '@scraper/logger';
 import apiRoutes from './routes/api';
-import { DatabaseService, QueueService } from './services';
+import { DatabaseService, QueueService } from '@scraper/core';
 import { v4 as uuidv4 } from 'uuid';
 
+const logger = createScraperLogger({ service: 'queue-server' });
 const dbService = new DatabaseService(dynamodb);
 const queueService = new QueueService(sqs)
 

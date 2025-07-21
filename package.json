@@ -5,15 +5,14 @@
   "private": true,
   "workspaces": [
     "apps/analytics",
-    "apps/queue"
+    "apps/queue",
+    "apps/worker"
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=apps/analytics\" \"npm run dev --workspace=apps/queue\"",
     "build": "npm run build --workspace=apps/analytics && npm run build --workspace=apps/queue", 
     "start": "concurrently \"npm run start --workspace=apps/analytics\" \"npm run start --workspace=apps/queue\"",
-    "worker": "npm run worker --workspace=apps/queue",
-    "setup": "./setup.sh",
-    "test-api": "./test-api.sh"
+    "worker": "npm run worker --workspace=apps/queue"
   },
   "keywords": [
     "web-scraping",

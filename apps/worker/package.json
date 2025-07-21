@@ -1,17 +1,20 @@
 {
-  "name": "queue",
+  "name": "worker",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Async web scraper worker service",
+  "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev src/index.ts",
+    "dev": "ts-node src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "worker": "ts-node-dev src/worker.ts",
-    "worker:prod": "node dist/worker.js",
-    "examples": "ts-node-dev src/examples/receiveMessages.ts"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "worker",
+    "scraper",
+    "queue",
+    "puppeteer"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -19,19 +22,12 @@
     "@scraper/core": "file:../../packages/core",
     "@scraper/logger": "file:../../packages/logger",
     "@scraper/types": "file:../../packages/types",
-    "@types/joi": "^17.2.3",
-    "cors": "^2.8.5",
     "dotenv": "^17.2.0",
-    "express": "^5.1.0",
-    "joi": "^17.13.3",
-    "uuid": "^11.1.0"
+    "envalid": "^8.1.0"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.3",
     "@types/node": "^24.0.12",
     "@types/uuid": "^9.0.0",
-    "joi-to-typescript": "^4.15.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"
   }

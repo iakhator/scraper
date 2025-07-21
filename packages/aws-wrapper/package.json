@@ -1,0 +1,27 @@
+{
+  "name": "@scraper/aws-wrapper",
+  "version": "1.0.0",
+  "description": "AWS wrapper with DynamoDB and SQS clients for the scraper project",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.645.0",
+    "@aws-sdk/client-sqs": "^3.645.0",
+    "@aws-sdk/util-dynamodb": "^3.645.0",
+    "@scraper/logger": "file:../logger",
+    "@scraper/types": "file:../types",
+    "envalid": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "typescript": "^5.6.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

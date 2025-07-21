@@ -1,6 +1,4 @@
 
-version: '3.8'
-
 services:
   analytics:
     container_name: scraper-analytics-dev
@@ -18,12 +16,46 @@ services:
       - ./apps/analytics:/app
       - analytics_node_modules:/app/node_modules
     restart: unless-stopped
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/analytics
+          target: /app
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./apps/analytics/package.json
+
+  worker:
+    container_name: scraper-worker-dev
+    build:
+      context: .
+      dockerfile: ./apps/worker/Dockerfile
+      target: dev
+    environment:
+      - NODE_ENV=development
+    env_file:
+      - .env
+    depends_on:
+      - queue
+    volumes:
+      - ./apps/worker/src:/app/apps/worker/src
+      - ./logs:/app/apps/worker/logs
+    working_dir: /app/apps/worker
+    restart: unless-stopped
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/worker/src
+          target: /app/apps/worker/src
+        - action: rebuild
+          path: ./apps/worker/package.json
 
   queue:
     container_name: scraper-queue-dev
     build:
-      context: ./apps/queue
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./apps/queue/Dockerfile
       target: dev
     ports:
       - "3001:3001"
@@ -33,10 +65,16 @@ services:
     env_file:
       - ./apps/queue/.env
     volumes:
-      - ./apps/queue:/app
-      - queue_node_modules:/app/node_modules
+      - ./apps/queue/src:/app/apps/queue/src
+    working_dir: /app/apps/queue
     restart: unless-stopped
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/queue/src
+          target: /app/apps/queue/src
+        - action: rebuild
+          path: ./apps/queue/package.json
 
 volumes:
   analytics_node_modules:
-  queue_node_modules:

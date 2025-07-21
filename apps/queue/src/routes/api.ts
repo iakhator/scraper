@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { QueueService } from '../services/queueService';
-import { DatabaseService } from '../services/databaseService';
-import { urlSchema, bulkUrlSchema } from '../utils/validators';
-import { dynamodb, sqs } from "../aws-wrapper";
-import logger from '../utils/logger';
-import { ScrapeJob } from '../types';
+import { QueueService, DatabaseService, urlSchema, bulkUrlSchema } from '@scraper/core';
+import * as dynamodb from '@scraper/aws-wrapper';
+import * as sqs from '@scraper/aws-wrapper';
+import { createScraperLogger } from '@scraper/logger';
+import { ScrapeJob } from '@scraper/types';
+// import { urlSchema, bulkUrlSchema } from '../utils/validators';
+
+const logger = createScraperLogger({ service: 'queue-api' });
 // import { io } from '../server';
 // import { sqsClient, dynamodb } from '../config/aws';
 

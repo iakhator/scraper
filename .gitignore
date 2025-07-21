@@ -33,3 +33,4 @@ apps/queue/.env.*
 
 README.md
 docs/
+node_modules
