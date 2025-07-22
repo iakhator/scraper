@@ -45,4 +45,4 @@ async function startWorker() {
   }
 }
 
-startWorker();
+// startWorker();

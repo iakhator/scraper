@@ -15,12 +15,13 @@ import { logger } from '@iakhator/scraper-logger';
  * Send message to SQS queue with error handling
  */
 export async function sendMessage(
-  message: QueueMessage
+  message: QueueMessage,
+  type: string = 'default'
 ): Promise<{ messageId: string }> {
   
   try {
     const result = await sqsClient.send(new SendMessageCommand({
-        QueueUrl: config.queueUrl,
+        QueueUrl: type === 'default' ? config.queueUrl : config.dlqUrl,
         MessageBody: JSON.stringify(message),
         MessageAttributes: {
           priority: {

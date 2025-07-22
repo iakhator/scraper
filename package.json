@@ -6,13 +6,27 @@
   "workspaces": [
     "apps/analytics",
     "apps/queue",
-    "apps/worker"
+    "apps/worker",
+    "packages/types",
+    "packages/logger", 
+    "packages/aws-wrapper",
+    "packages/core"
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=apps/analytics\" \"npm run dev --workspace=apps/queue\"",
     "build": "npm run build --workspace=apps/analytics && npm run build --workspace=apps/queue", 
     "start": "concurrently \"npm run start --workspace=apps/analytics\" \"npm run start --workspace=apps/queue\"",
-    "worker": "npm run worker --workspace=apps/queue"
+    "worker": "npm run worker --workspace=apps/queue",
+    "build:packages": "npm run build:types && npm run build:logger && npm run build:aws-wrapper && npm run build:core",
+    "build:types": "npm run build --workspace=packages/types",
+    "build:logger": "npm run build --workspace=packages/logger", 
+    "build:aws-wrapper": "npm run build --workspace=packages/aws-wrapper",
+    "build:core": "npm run build --workspace=packages/core",
+    "build:apps": "npm run build --workspace=apps/analytics && npm run build --workspace=apps/queue && npm run build --workspace=apps/worker",
+    "build:all": "npm run build:packages && npm run build:apps",
+    "clean:packages": "npm run clean --workspace=packages/logger && npm run clean --workspace=packages/aws-wrapper && npm run clean --workspace=packages/core",
+    "dev:packages": "concurrently \"npm run dev --workspace=packages/types\" \"npm run dev --workspace=packages/logger\" \"npm run dev --workspace=packages/aws-wrapper\" \"npm run dev --workspace=packages/core\"",
+    "publish:packages": "npm run build:packages && npm publish --workspace=packages/types && npm publish --workspace=packages/logger && npm publish --workspace=packages/aws-wrapper && npm publish --workspace=packages/core"
   },
   "keywords": [
     "web-scraping",

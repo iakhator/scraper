@@ -71,39 +71,12 @@ export class Worker {
     logger.info('Scraper Worker stopped');
   }
 
-  private async processMessage(message: Message): Promise<void> {
-    if (!message.Body) {
-      logger.error('Received message with no body');
-      try {
-        await this.queueService.deleteMessage({ 
-          QueueUrl: process.env.QUEUE_URL!, 
-          ReceiptHandle: message.ReceiptHandle! 
-        });
-      } catch (deleteError: any) {
-        logger.error(`Failed to delete invalid message: ${deleteError.message}`);
-      }
-      return;
-    }
-
-    let queueMessage: QueueMessage;
-    try {
-      queueMessage = JSON.parse(message.Body);
-    } catch (error: any) {
-      logger.error(`Failed to parse message body: ${error.message}`);
-      try {
-        await this.queueService.deleteMessage({ 
-          QueueUrl: process.env.QUEUE_URL!, 
-          ReceiptHandle: message.ReceiptHandle! 
-        });
-      } catch (deleteError: any) {
-        logger.error(`Failed to delete malformed message: ${deleteError.message}`);
-      }
-      return;
-    }
+  private async processMessage(sqsMessage: Message): Promise<void> {
+    const queueMessage =  JSON.parse(sqsMessage.Body || '{}');
+    const receiptHandle = sqsMessage.ReceiptHandle;
 
     try {
       logger.info(`Processing job: ${queueMessage.jobId} for URL: ${queueMessage.url}`);
-      
       // Update job status to processing
       const updateResult = await this.databaseService.updateJob(queueMessage.jobId, {
         status: 'processing',
@@ -147,21 +120,20 @@ export class Worker {
       try {
         await this.queueService.deleteMessage({ 
           QueueUrl: process.env.QUEUE_URL!, 
-          ReceiptHandle: message.ReceiptHandle! 
+          ReceiptHandle: queueMessage.ReceiptHandle! 
         });
       } catch (deleteError: any) {
         logger.error(`Failed to delete message after processing job ${queueMessage.jobId}: ${deleteError.message}`);
-        // Continue execution - job was processed successfully even if message deletion failed
       }
       
       logger.info(`Successfully processed job: ${queueMessage.jobId}`);
     } catch (error: any) {
       logger.error(`Failed to process job ${queueMessage.jobId}: ${error.message}`, error);
-      await this.handleFailedJob(queueMessage, message, error);
+      await this.handleFailedJob(queueMessage, receiptHandle, error);
     }
   }
 
-  private async handleFailedJob(queueMessage: QueueMessage, message: Message, error: any): Promise<void> {
+  private async handleFailedJob(queueMessage: QueueMessage, receiptHandle: string | undefined, error: any): Promise<void> {
     try {
       const newRetryCount = (queueMessage.retryCount || 0) + 1;
       const maxRetries = queueMessage.maxRetries || 3;
@@ -197,6 +169,11 @@ export class Worker {
           logger.error(`Failed to mark job as failed: ${failResult.error.message}`);
           throw failResult.error;
         }
+        
+        await this.queueService.sendMessage({
+          jobId: queueMessage.jobId,
+          url: queueMessage.url,
+          priority: 'low'}, 'dlq');
 
         logger.error(`Job permanently failed after ${maxRetries} retries: ${queueMessage.jobId}`);
       }
@@ -205,7 +182,7 @@ export class Worker {
       try {
         await this.queueService.deleteMessage({ 
           QueueUrl: process.env.QUEUE_URL!, 
-          ReceiptHandle: message.ReceiptHandle! 
+          ReceiptHandle: receiptHandle! 
         });
       } catch (deleteError: any) {
         logger.error(`Failed to delete message after handling failed job ${queueMessage.jobId}: ${deleteError.message}`);
