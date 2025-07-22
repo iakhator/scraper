@@ -104,15 +104,15 @@ ENV NODE_ENV=development
 
 # Copy package files and install all dependencies (no apps/queue prefix)
 COPY package*.json ./
-ARG GITHUB_TOKEN
-RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
-  echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
-  rm -f package-lock.json && \
-  npm install && \
-  rm .npmrc
+# ARG GITHUB_TOKEN
+# RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
+#   echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
+#   rm -f package-lock.json && \
+#   npm install && \
+#   rm .npmrc
 
 # Copy source code (no apps/queue prefix)
-COPY src ./src
+COPY . .
 COPY tsconfig.json ./
 
 EXPOSE 3001
@@ -123,19 +123,18 @@ FROM node:22-alpine AS build
 WORKDIR /app
 
 # Copy package files and tsconfig (no apps/queue prefix)
-COPY package*.json ./
-COPY tsconfig.json ./
+COPY package*.json  ./
 
 # Install all dependencies (including dev)
-ARG GITHUB_TOKEN
-RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
-  echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
-  rm -f package-lock.json && \
-  npm install && \
-  rm .npmrc
+# ARG GITHUB_TOKEN
+# RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
+#   echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
+#   rm -f package-lock.json && \
+#   npm install && \
+#   rm .npmrc
 
 # Copy source and build (no apps/queue prefix)
-COPY src ./src
+COPY . .
 RUN npm run build
 
 # Production stage
