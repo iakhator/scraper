@@ -90,9 +90,9 @@ WORKDIR /app
 COPY apps/queue/package*.json ./
 
 # Install production dependencies from GitHub Packages
-ARG GITHUB_TOKEN
+ARG REPO_TOKEN
 RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
-  echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
+  echo "//npm.pkg.github.com/:_authToken=${REPO_TOKEN}" >> .npmrc && \
   rm -f package-lock.json && \
   npm install --only=production && \
   rm .npmrc
@@ -104,9 +104,9 @@ ENV NODE_ENV=development
 
 # Copy package files and install all dependencies (apps/queue prefix for root context)
 COPY apps/queue/package*.json ./
-ARG GITHUB_TOKEN
+ARG REPO_TOKEN
 RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
-  echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
+  echo "//npm.pkg.github.com/:_authToken=${REPO_TOKEN}" >> .npmrc && \
   rm -f package-lock.json && \
   npm install && \
   rm .npmrc
@@ -126,9 +126,9 @@ WORKDIR /app
 COPY apps/queue/package*.json  ./
 
 # Install all dependencies (including dev)
-ARG GITHUB_TOKEN
+ARG REPO_TOKEN
 RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
-  echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
+  echo "//npm.pkg.github.com/:_authToken=${REPO_TOKEN}" >> .npmrc && \
   rm -f package-lock.json && \
   npm install && \
   rm .npmrc
