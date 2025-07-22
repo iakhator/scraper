@@ -6,6 +6,7 @@ apps/analytics/.nitro
 apps/analytics/.cache
 apps/analytics/dist
 apps/queue/dist
+apps/worker/dist
 
 # Package build outputs
 packages/aws-wrapper/dist
@@ -16,6 +17,7 @@ packages/types/dist
 # Node dependencies
 apps/analytics/node_modules
 apps/queue/node_modules
+apps/worker/node_modules
 
 # Logs
 logs
@@ -36,6 +38,9 @@ apps/analytics/.env.*
 apps/queue/.env
 apps/queue/.env.*
 !apps/queue/.env.example
+apps/worker/.env
+apps/worker/.env.*
+!apps/worker/.env.example
 
 README.md
 docs/
