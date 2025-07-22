@@ -26,7 +26,17 @@
     "build:all": "npm run build:packages && npm run build:apps",
     "clean:packages": "npm run clean --workspace=packages/logger && npm run clean --workspace=packages/aws-wrapper && npm run clean --workspace=packages/core",
     "dev:packages": "concurrently \"npm run dev --workspace=packages/types\" \"npm run dev --workspace=packages/logger\" \"npm run dev --workspace=packages/aws-wrapper\" \"npm run dev --workspace=packages/core\"",
-    "publish:packages": "npm run build:packages && npm publish --workspace=packages/types && npm publish --workspace=packages/logger && npm publish --workspace=packages/aws-wrapper && npm publish --workspace=packages/core"
+    "publish:packages": "npm run build:packages && npm publish --workspace=packages/types && npm publish --workspace=packages/logger && npm publish --workspace=packages/aws-wrapper && npm publish --workspace=packages/core",
+    "update:packages": "npm update @iakhator/scraper-types @iakhator/scraper-logger @iakhator/scraper-aws-wrapper @iakhator/scraper-core --workspaces",
+    "version:patch:packages": "npm version patch --workspace=packages/types --workspace=packages/logger --workspace=packages/aws-wrapper --workspace=packages/core",
+    "version:minor:packages": "npm version minor --workspace=packages/types --workspace=packages/logger --workspace=packages/aws-wrapper --workspace=packages/core",
+    "version:major:packages": "npm version major --workspace=packages/types --workspace=packages/logger --workspace=packages/aws-wrapper --workspace=packages/core",
+    "release:patch": "npm run version:patch:packages && npm run update:packages && npm run build:packages && npm run publish:packages",
+    "release:minor": "npm run version:minor:packages && npm run update:packages && npm run build:packages && npm run publish:packages",
+    "release:major": "npm run version:major:packages && npm run update:packages && npm run build:packages && npm run publish:packages",
+    "install:worker": "npm install --workspace=apps/worker",
+    "install:queue": "npm install --workspace=apps/queue",
+    "install:analytics": "npm install --workspace=apps/analytics"
   },
   "keywords": [
     "web-scraping",

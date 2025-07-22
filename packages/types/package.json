@@ -1,6 +1,6 @@
 {
   "name": "@iakhator/scraper-types",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Shared TypeScript types for scraper project",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -16,7 +16,11 @@
     "build": "tsc",
     "dev": "tsc --watch"
   },
-  "keywords": ["scraper", "types", "typescript"],
+  "keywords": [
+    "scraper",
+    "types",
+    "typescript"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
