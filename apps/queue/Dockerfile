@@ -86,20 +86,8 @@
 FROM node:22-alpine AS base
 WORKDIR /app
 
-# Copy package files (apps/queue prefix for root context)
-COPY apps/queue/package*.json ./
-
-# Install production dependencies from GitHub Packages
-ARG REPO_TOKEN
-RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
-  echo "//npm.pkg.github.com/:_authToken=${REPO_TOKEN}" >> .npmrc && \
-  rm -f package-lock.json && \
-  npm install --only=production && \
-  rm .npmrc
-
 # Development stage  
-FROM node:22-alpine AS dev
-WORKDIR /app
+FROM base AS dev
 ENV NODE_ENV=development
 
 # Copy package files and install all dependencies (apps/queue prefix for root context)
@@ -112,15 +100,13 @@ RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
   rm .npmrc
 
 # Copy source code (apps/queue prefix for root context)
-COPY apps/queue .
-# COPY tsconfig.json ./
+COPY apps/queue ./
 
 EXPOSE 3001
 CMD ["npm", "run", "dev"]
 
 # Build stage - compile TypeScript
-FROM node:22-alpine AS build
-WORKDIR /app
+FROM base AS build
 
 # Copy package files and tsconfig (apps/queue prefix for root context)
 COPY apps/queue/package*.json  ./
@@ -135,13 +121,11 @@ RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
 
 # Copy source and build (apps/queue prefix for root context)
 COPY apps/queue/ ./
-# COPY apps/queue/tsconfig.json ./
 
 RUN npm run build
 
 # Production stage
-FROM node:22-alpine AS prod
-WORKDIR /app
+FROM base AS prod
 ENV NODE_ENV=production
 
 # Copy production dependencies from build stage

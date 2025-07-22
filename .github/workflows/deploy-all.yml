@@ -32,8 +32,18 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.analytics-changed == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Validate Analytics Docker Build
+      run: |
+        docker build --target build -f apps/analytics/Dockerfile .
+        
     - name: Deploy Analytics to Render
       run: |
         curl -X POST ${{ secrets.RENDER_ANALYTICS_DEPLOY_HOOK }}
@@ -42,8 +52,18 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.queue-changed == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Validate Queue Docker Build
+      run: |
+        docker build --target build --build-arg REPO_TOKEN=${{ secrets.REPO_TOKEN }} -f apps/queue/Dockerfile .
+        
     - name: Deploy Queue to Render
       run: |
         curl -X POST ${{ secrets.RENDER_QUEUE_DEPLOY_HOOK }}

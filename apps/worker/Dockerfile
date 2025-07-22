@@ -1,4 +1,4 @@
-# Base stage - common dependencies
+# Base stage - common setup
 FROM node:22-alpine AS base
 WORKDIR /app
 
@@ -20,74 +20,52 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 RUN addgroup -g 1001 -S nodejs && \
   adduser -S worker -u 1001 -G nodejs
 
-# Dependencies stage - install from GitHub Packages
-FROM base AS deps
-WORKDIR /app
-
-# Copy package files
-COPY apps/worker/package*.json ./
-
-# Install production dependencies
-ARG GITHUB_TOKEN
-RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
-    echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
-    rm -f package-lock.json && \
-    npm install --only=production && \
-    npm cache clean --force && \
-    rm .npmrc
-
 # Development stage
 FROM base AS dev
 ENV NODE_ENV=development
-WORKDIR /app
 
 # Copy package files and install all dependencies
 COPY apps/worker/package*.json ./
-ARG GITHUB_TOKEN
+ARG REPO_TOKEN
 RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
-    echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
-    rm -f package-lock.json && \
-    npm install && \
-    rm .npmrc
+  echo "//npm.pkg.github.com/:_authToken=${REPO_TOKEN}" >> .npmrc && \
+  rm -f package-lock.json && \
+  npm install && \
+  rm .npmrc
 
 # Copy source code
-COPY apps/worker/src ./src
-COPY apps/worker/tsconfig.json ./tsconfig.json
+COPY apps/worker/ ./
 RUN chown -R worker:nodejs /app
 USER worker
 CMD ["npm", "run", "dev"]
 
 # Build stage for production
-FROM base AS builder
-WORKDIR /app
+FROM base AS build
 
 # Copy package files and tsconfig
 COPY apps/worker/package*.json ./
 COPY apps/worker/tsconfig.json ./
 
 # Install all dependencies (including dev)
-ARG GITHUB_TOKEN
+ARG REPO_TOKEN
 RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
-    echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
-    rm -f package-lock.json && \
-    npm install && \
-    rm .npmrc
+  echo "//npm.pkg.github.com/:_authToken=${REPO_TOKEN}" >> .npmrc && \
+  rm -f package-lock.json && \
+  npm install && \
+  rm .npmrc
 
 # Copy source and build
-COPY apps/worker/src ./src
+COPY apps/worker/ ./
 RUN npm run build
 
 # Production stage
 FROM base AS prod
-WORKDIR /app
 ENV NODE_ENV=production
 
-# Copy production dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/package*.json ./
-
-# Copy built application
-COPY --from=builder /app/dist ./dist
+# Copy production dependencies from build stage
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package*.json ./
 
 RUN chown -R worker:nodejs /app
 USER worker

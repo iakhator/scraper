@@ -33,7 +33,7 @@ services:
       dockerfile: ./apps/worker/Dockerfile
       target: dev
       args:
-        - GITHUB_TOKEN=${GITHUB_TOKEN}
+        - REPO_TOKEN=${REPO_TOKEN}
     environment:
       - NODE_ENV=development
     env_file:
@@ -60,7 +60,7 @@ services:
       dockerfile: ./apps/queue/Dockerfile
       target: dev
       args:
-        - GITHUB_TOKEN=${GITHUB_TOKEN}
+        - REPO_TOKEN=${REPO_TOKEN}
     ports:
       - "3001:3001"
     environment:
