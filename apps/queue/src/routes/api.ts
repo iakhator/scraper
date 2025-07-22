@@ -18,6 +18,7 @@ const databaseService = new DatabaseService(dynamodb);
 // Submit single URL
 router.post('/urls', async (req, res) => {
   try {
+    console.log('I got here')
     const { error, value } = urlSchema.validate(req.body);
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
