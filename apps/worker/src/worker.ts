@@ -117,10 +117,12 @@ export class Worker {
       }
 
       // Delete message from queue
+      if(!receiptHandle) return;
+      
       try {
         await this.queueService.deleteMessage({ 
           QueueUrl: process.env.QUEUE_URL!, 
-          ReceiptHandle: queueMessage.ReceiptHandle! 
+          ReceiptHandle: receiptHandle! 
         });
       } catch (deleteError: any) {
         logger.error(`Failed to delete message after processing job ${queueMessage.jobId}: ${deleteError.message}`);

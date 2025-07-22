@@ -134,6 +134,8 @@ export class ScraperService {
         await page.goto(url, { waitUntil: 'networkidle2', timeout: config.pageTimeout});
 
         const result = await page.evaluate(() => {
+          document.querySelectorAll('header, footer, nav, .sidebar, .subscribe, .comments, iframe, script, style').forEach(el => el.remove());
+
           const getMetaContent = (selector: string) => {
             const element = document.querySelector(selector);
             return element ? element.getAttribute('content') : undefined;

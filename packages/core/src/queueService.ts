@@ -43,9 +43,9 @@ export class QueueService {
     }
   }
 
-  async deleteMessage(receiptHandle: DeleteMessageCommandInput): Promise<void> {
+  async deleteMessage(params: DeleteMessageCommandInput): Promise<void> {
     try {
-      await this.sqs.deleteMessage(receiptHandle);
+      await this.sqs.deleteMessage(params);
     } catch (error: any) {
       const errorMessage = `Failed to delete message from queue: ${error.message}`;
       logger.error(errorMessage, error);
