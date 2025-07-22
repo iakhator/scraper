@@ -83,7 +83,7 @@
 
 
 
-ROM node:22-alpine AS prod-deps
+FROM node:22-alpine AS prod-deps
 WORKDIR /app
 
 # Copy package files (no apps/queue prefix)
