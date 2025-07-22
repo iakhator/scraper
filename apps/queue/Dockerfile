@@ -134,7 +134,7 @@ RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
   rm .npmrc
 
 # Copy source and build (no apps/queue prefix)
-COPY . .
+COPY apps/queue .
 RUN npm run build
 
 # Production stage
