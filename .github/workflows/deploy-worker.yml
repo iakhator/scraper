@@ -1,4 +1,4 @@
-name: Queue CI
+name: Worker CI
 
 on:
   push:
