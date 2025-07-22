@@ -104,12 +104,12 @@ ENV NODE_ENV=development
 
 # Copy package files and install all dependencies (no apps/queue prefix)
 COPY package*.json ./
-# ARG GITHUB_TOKEN
-# RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
-#   echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
-#   rm -f package-lock.json && \
-#   npm install && \
-#   rm .npmrc
+ARG GITHUB_TOKEN
+RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
+  echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
+  rm -f package-lock.json && \
+  npm install && \
+  rm .npmrc
 
 # Copy source code (no apps/queue prefix)
 COPY . .
@@ -126,12 +126,12 @@ WORKDIR /app
 COPY package*.json  ./
 
 # Install all dependencies (including dev)
-# ARG GITHUB_TOKEN
-# RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
-#   echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
-#   rm -f package-lock.json && \
-#   npm install && \
-#   rm .npmrc
+ARG GITHUB_TOKEN
+RUN echo "@iakhator:registry=https://npm.pkg.github.com" > .npmrc && \
+  echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc && \
+  rm -f package-lock.json && \
+  npm install && \
+  rm .npmrc
 
 # Copy source and build (no apps/queue prefix)
 COPY . .
