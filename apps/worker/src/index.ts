@@ -55,17 +55,17 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-async function startWorker() {
-  try {
-    logger.info('Starting scraper worker daemon...');
-    await worker.start();
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error(`Worker startup failed: ${errorMessage}`, { 
-      error: error instanceof Error ? error.message : String(error)
-    });
-    process.exit(1);
-  }
-}
+// async function startWorker() {
+//   try {
+//     logger.info('Starting scraper worker daemon...');
+//     await worker.start();
+//   } catch (error) {
+//     const errorMessage = error instanceof Error ? error.message : String(error);
+//     logger.error(`Worker startup failed: ${errorMessage}`, { 
+//       error: error instanceof Error ? error.message : String(error)
+//     });
+//     process.exit(1);
+//   }
+// }
 
 // startWorker();
