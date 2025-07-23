@@ -3,8 +3,8 @@ services:
   analytics:
     container_name: scraper-analytics
     build:
-      context: ./apps/analytics
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./apps/analytics/Dockerfile
       target: prod
     ports:
       - "3000:3000"

@@ -94,79 +94,82 @@ export class Worker {
     const queueMessage =  JSON.parse(sqsMessage.Body || '{}');
     const receiptHandle = sqsMessage.ReceiptHandle;
 
-    try {
-      logger.info(`Processing job: ${queueMessage.jobId} for URL: ${queueMessage.url}`);
-      
-      // Notify start of processing
-      this.wsClient?.sendJobUpdate(queueMessage.jobId, 'processing', {
-        url: queueMessage.url,
-        startedAt: new Date().toISOString()
-      });
-      
-      // Update job status to processing
-      const updateResult = await this.databaseService.updateJob(queueMessage.jobId, {
-        status: 'processing',
-      });
-
-      if (updateResult.error) {
-        throw new Error(`Failed to update job status to processing: ${updateResult.error.message}`);
-      }
-
-      const scrapedData = await this.scraperService.scrapeUrl(queueMessage.url);
-
-      const content: ScrapedContent = {
-        PK: `CONTENT#${queueMessage.jobId}`,
-        SK: `CONTENT`,
-        id: queueMessage.jobId,
-        url: queueMessage.url,
-        title: scrapedData.title || '',
-        content: scrapedData.content || '',
-        metadata: scrapedData.metadata || {},
-        scrapedAt: new Date().toISOString(),
-        processingTime: scrapedData.processingTime || 0,
-      };
-
-      // Save scraped content
-      const saveContentResult = await this.databaseService.saveScrapedContent(content);
-      if (saveContentResult.error) {
-        throw new Error(`Failed to save scraped content: ${saveContentResult.error.message}`);
-      }
-
-      // Update job status to completed
-      const completeResult = await this.databaseService.updateJob(queueMessage.jobId, {
-        status: 'completed',
-        completedAt: new Date().toISOString(),
-      });
-
-      if (completeResult.error) {
-        throw new Error(`Failed to update job status to completed: ${completeResult.error.message}`);
-      }
-
-      // Notify completion
-      this.wsClient?.sendJobUpdate(queueMessage.jobId, 'completed', {
-        url: queueMessage.url,
-        title: scrapedData.title,
-        completedAt: new Date().toISOString(),
-        processingTime: scrapedData.processingTime
-      });
-
-      // Delete message from queue
-      // if(!receiptHandle) return;
-
-      try {
-        await this.queueService.deleteMessage({ 
-          QueueUrl: process.env.QUEUE_URL!, 
-          ReceiptHandle: receiptHandle! 
-        });
-      } catch (deleteError: any) {
-        logger.error(`Failed to delete message after processing job ${queueMessage.jobId}: ${deleteError.message}`);
-      }
-      
-      logger.info(`Successfully processed job: ${queueMessage.jobId}`);
-    } catch (error: any) {
-      logger.error(`Failed to process job ${queueMessage.jobId}: ${error.message}`, error);
-      await this.handleFailedJob(queueMessage, receiptHandle, error);
+    if(!queueMessage || !queueMessage.jobId || !queueMessage.url) { 
+      logger.warn('Received invalid queue message, skipping', { queueMessage, receiptHandle });
+      return;
     }
+
+    // try {
+    //   logger.info(`Processing job: ${queueMessage.jobId} for URL: ${queueMessage.url}`);
+      
+    //   // Notify start of processing
+    //   this.wsClient?.sendJobUpdate(queueMessage.jobId, 'processing', {
+    //     url: queueMessage.url,
+    //     startedAt: new Date().toISOString()
+    //   });
+      
+    //   // Update job status to processing
+    //   const updateResult = await this.databaseService.updateJob(queueMessage.jobId, {
+    //     status: 'processing',
+    //   });
+
+    //   if (updateResult.error) {
+    //     throw new Error(`Failed to update job status to processing: ${updateResult.error.message}`);
+    //   }
+
+    //   const scrapedData = await this.scraperService.scrapeUrl(queueMessage.url);
+
+    //   const content: ScrapedContent = {
+    //     PK: `CONTENT#${queueMessage.jobId}`,
+    //     SK: `CONTENT`,
+    //     id: queueMessage.jobId,
+    //     url: queueMessage.url,
+    //     title: scrapedData.title || '',
+    //     content: scrapedData.content || '',
+    //     metadata: scrapedData.metadata || {},
+    //     scrapedAt: new Date().toISOString(),
+    //     processingTime: scrapedData.processingTime || 0,
+    //   };
+
+    //   // Save scraped content
+    //   const saveContentResult = await this.databaseService.saveScrapedContent(content);
+    //   if (saveContentResult.error) {
+    //     throw new Error(`Failed to save scraped content: ${saveContentResult.error.message}`);
+    //   }
+
+    //   // Update job status to completed
+    //   const completeResult = await this.databaseService.updateJob(queueMessage.jobId, {
+    //     status: 'completed',
+    //     completedAt: new Date().toISOString(),
+    //   });
+
+    //   if (completeResult.error) {
+    //     throw new Error(`Failed to update job status to completed: ${completeResult.error.message}`);
+    //   }
+
+    //   // Notify completion
+    //   this.wsClient?.sendJobUpdate(queueMessage.jobId, 'completed', {
+    //     url: queueMessage.url,
+    //     title: scrapedData.title,
+    //     completedAt: new Date().toISOString(),
+    //     processingTime: scrapedData.processingTime
+    //   });
+
+
+    //   try {
+    //     await this.queueService.deleteMessage({ 
+    //       QueueUrl: process.env.QUEUE_URL!, 
+    //       ReceiptHandle: receiptHandle! 
+    //     });
+    //   } catch (deleteError: any) {
+    //     logger.error(`Failed to delete message after processing job ${queueMessage.jobId}: ${deleteError.message}`);
+    //   }
+      
+    //   logger.info(`Successfully processed job: ${queueMessage.jobId}`);
+    // } catch (error: any) {
+    //   logger.error(`Failed to process job ${queueMessage.jobId}: ${error.message}`, error);
+    //   await this.handleFailedJob(queueMessage, receiptHandle, error);
+    // }
   }
 
   private async handleFailedJob(queueMessage: QueueMessage, receiptHandle: string | undefined, error: any): Promise<void> {
@@ -224,10 +227,10 @@ export class Worker {
           failedAt: new Date().toISOString()
         });
         
-        await this.queueService.sendMessage({
-          jobId: queueMessage.jobId,
-          url: queueMessage.url,
-          priority: 'low'}, 'dlq');
+        // await this.queueService.sendMessage({
+        //   jobId: queueMessage.jobId,
+        //   url: queueMessage.url,
+        //   priority: 'low'}, 'dlq');
 
         logger.error(`Job permanently failed after ${maxRetries} retries: ${queueMessage.jobId}`);
       }

@@ -36,7 +36,7 @@ services:
         - REPO_TOKEN=${REPO_TOKEN}
     environment:
       - NODE_ENV=development
-      - QUEUE_SERVICE_URL=http://queue:3001
+      - QUEUE_SERVICE_URL=${QUEUE_SERVICE_URL}
     env_file:
       - .env
     depends_on:

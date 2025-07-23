@@ -341,14 +341,17 @@ onMounted(() => {
 // Fetch existing jobs from the API
 async function fetchExistingJobs() {
   try {
-    const response = await fetch('https:localhost:3001/api/jobs')
+    const response = await $fetch('http://localhost:3001/api/jobs')
+
+    console.log(response, 'response')
     
-    if (!response.ok) {
+    if (!response.data) {
       console.error('Failed to fetch jobs:', response.statusText)
       return
     }
     
-    const existingJobs = await response.json()
+    const existingJobs = await response.data
+
     
     // Handle empty response
     if (!Array.isArray(existingJobs)) {
