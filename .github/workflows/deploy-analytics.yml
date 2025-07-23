@@ -17,5 +17,4 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Validate Dockerfile
-      working-directory: ./apps/analytics
-      run: docker build --target build .
+      run: docker build --target build apps/analytics/Dockerfile .

@@ -23,7 +23,6 @@
     "build:aws-wrapper": "npm run build --workspace=packages/aws-wrapper",
     "build:core": "npm run build --workspace=packages/core",
     "build:apps": "npm run build --workspace=apps/analytics && npm run build --workspace=apps/queue && npm run build --workspace=apps/worker",
-    "build:all": "npm run build:packages && npm run build:apps",
     "clean:packages": "npm run clean --workspace=packages/logger && npm run clean --workspace=packages/aws-wrapper && npm run clean --workspace=packages/core",
     "dev:packages": "concurrently \"npm run dev --workspace=packages/types\" \"npm run dev --workspace=packages/logger\" \"npm run dev --workspace=packages/aws-wrapper\" \"npm run dev --workspace=packages/core\"",
     "publish:packages": "npm run build:packages && npm publish --workspace=packages/types && npm publish --workspace=packages/logger && npm publish --workspace=packages/aws-wrapper && npm publish --workspace=packages/core",

@@ -14,7 +14,7 @@ interface IDynamoDBOperations {
     returnValues?: "NONE" | "ALL_OLD" | "UPDATED_OLD" | "ALL_NEW" | "UPDATED_NEW";
     expressionAttributeNames?: Record<string, string>;
   }) => Promise<DynamoReturn<DynamoItem>>;
-  queryItems?: (tableName: string, options?: { 
+  queryItems: (tableName: string, options?: { 
     indexName?: string;
     keyConditionExpression?: string; 
     filterExpression?: string; 
