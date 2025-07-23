@@ -67,3 +67,23 @@ jobs:
     - name: Deploy Queue to Render
       run: |
         curl -X POST ${{ secrets.RENDER_QUEUE_DEPLOY_HOOK }}
+  
+  deploy-worker:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.workers-changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Validate Queue Docker Build
+      run: |
+        docker build --target build --build-arg REPO_TOKEN=${{ secrets.REPO_TOKEN }} -f apps/worker/Dockerfile .
+        
+    - name: Deploy Queue to Render
+      run: |
+        curl -X POST ${{ secrets.RENDER_WORKER_DEPLOY_HOOK }}
