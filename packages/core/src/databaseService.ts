@@ -14,6 +14,15 @@ interface IDynamoDBOperations {
     returnValues?: "NONE" | "ALL_OLD" | "UPDATED_OLD" | "ALL_NEW" | "UPDATED_NEW";
     expressionAttributeNames?: Record<string, string>;
   }) => Promise<DynamoReturn<DynamoItem>>;
+  queryItems?: (tableName: string, options?: { 
+    indexName?: string;
+    keyConditionExpression?: string; 
+    filterExpression?: string; 
+    expressionAttributeValues?: Record<string, any>;
+    expressionAttributeNames?: Record<string, string>;
+    limit?: number;
+    scanIndexForward?: boolean;
+  }) => Promise<DynamoReturn<DynamoItem[]>>;
   scanItems?: (tableName: string, options?: { limit?: number; filterExpression?: string; expressionAttributeValues?: Record<string, any> }) => Promise<DynamoReturn<DynamoItem[]>>;
 }
 
@@ -71,9 +80,10 @@ export class DatabaseService {
   }
 
   async saveJob(job: ScrapeJob): Promise<DynamoReturn<ScrapeJob>> {
+      const createdAt = job.createdAt || new Date().toISOString();
       const item = {
       ...job,
-      createdAt: job.createdAt || new Date().toISOString(),
+      createdAt,
     };
       const result = await this.dynamodb.putItem(this.tableName, item, {
         conditionExpression: 'attribute_not_exists(PK)',
@@ -86,7 +96,7 @@ export class DatabaseService {
         return { error: result.error };
       }
 
-      logger.info(`Job saved: ${job.id}`);
+      logger.info(`Job saved: ${job.id} with GSI attributes`);
       return {data: item as ScrapeJob}
   }
 
@@ -204,34 +214,33 @@ export class DatabaseService {
 
   async getRecentJobs(limit: number = 50): Promise<DynamoReturn<ScrapeJob[]>> {
     try {
-      // If scan method is available, use it
-      if (this.dynamodb.scanItems) {
-        const result = await this.dynamodb.scanItems(this.tableName, {
-          limit,
-          filterExpression: 'SK = :sk',
+      // Use query operation on GSI which is much more efficient than scan
+        logger.info('Querying recent jobs using GSI1 index');
+        
+        const result = await this.dynamodb.queryItems(this.tableName, {
+          indexName: 'GSI1',
+          keyConditionExpression: 'SK = :sk',
           expressionAttributeValues: {
             ':sk': 'JOB'
-          }
+          },
+          limit,
+          scanIndexForward: false
         });
 
         if (result.error) {
-          logger.error('Failed to scan recent jobs', {
+          logger.error('Failed to query recent jobs from GSI1', {
             error: result.error.message,
             limit,
           });
-          return { error: result.error };
+
+          return {data : []};
         }
 
         const jobs = (result.data || []) as ScrapeJob[];
-        // Sort by createdAt descending
-        jobs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-        logger.info(`Retrieved ${jobs.length} recent jobs`);
+        logger.info(`Retrieved ${jobs.length} recent jobs using GSI1 query`);
         return { data: jobs };
-      } else {
-        logger.warn('Scan method not available, returning empty result');
-        return { data: [] };
-      }
+        
+      
     } catch (error: any) {
       const errorMessage = `Failed to get recent jobs: ${error.message}`;
       logger.error(errorMessage, error);

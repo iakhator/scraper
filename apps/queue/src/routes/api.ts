@@ -5,7 +5,7 @@ import * as dynamodb from '@iakhator/scraper-aws-wrapper';
 import * as sqs from '@iakhator/scraper-aws-wrapper';
 import { createScraperLogger } from '@iakhator/scraper-logger';
 import { ScrapeJob } from '@iakhator/scraper-types';
-// import { urlSchema, bulkUrlSchema } from '../utils/validators';
+import { broadcastJobUpdate } from '../index';
 
 const logger = createScraperLogger({ service: 'queue-api' });
 // import { io } from '../server';
@@ -17,8 +17,8 @@ const databaseService = new DatabaseService(dynamodb);
 
 // Submit single URL
 router.post('/urls', async (req, res) => {
+  console.log(req.body, 'Bulk URL submission request');
   try {
-    console.log('I got here')
     const { error, value } = urlSchema.validate(req.body);
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
@@ -46,7 +46,12 @@ router.post('/urls', async (req, res) => {
       maxRetries: 3,
     });
 
-    // io.emit('jobSubmitted', { jobId, url: value.url, status: 'queued' });
+    // Broadcast job submission via WebSocket
+    broadcastJobUpdate(jobId, 'queued', {
+      url: value.url,
+      priority: value.priority
+    });
+
     res.status(201).json({ jobId, status: 'queued' });
   } catch (error: any) {
     const errorMessage = `Failed to submit URL ${req.body.url}: ${error.message}`;
@@ -87,7 +92,12 @@ router.post('/urls/bulk', async (req, res) => {
         maxRetries: 3,
       });
 
-      // io.emit('jobSubmitted', { jobId, url, status: 'queued' });
+      // Broadcast job submission via WebSocket
+      broadcastJobUpdate(jobId, 'queued', {
+        url,
+        priority: value.priority
+      });
+
       jobIds.push(jobId);
     }
 
@@ -132,17 +142,17 @@ router.post('/urls/bulk', async (req, res) => {
 // });
 
 // Get recent jobs
-// router.get('/jobs', async (req, res) => {
-//   try {
-//     const limit = parseInt(req.query.limit as string) || 50;
-//     const jobs = await databaseService.getRecentJobs(limit);
-//     res.json(jobs);
-//   } catch (error) {
-//     const errorMessage = `Failed to get recent jobs: ${error.message}`;
-//     logger.error(errorMessage, error);
-//     res.status(500).json({ error: 'Internal server error' });
-//   }
-// });
+router.get('/jobs', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const jobs = await databaseService.getRecentJobs(limit);
+    res.json(jobs);
+  } catch (error: any) {
+    const errorMessage = `Failed to get recent jobs: ${error.message}`;
+    logger.error(errorMessage, error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Get queue metrics
 // router.get('/metrics/queue', async (req, res) => {

@@ -24,13 +24,15 @@
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
     "joi": "^17.13.3",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.12",
     "@types/uuid": "^9.0.0",
+    "@types/ws": "^8.5.12",
     "joi-to-typescript": "^4.15.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"

@@ -3,6 +3,8 @@ import {
   PutItemCommand,
   UpdateItemCommand,
   DeleteItemCommand,
+  QueryCommand,
+  ScanCommand,
   DynamoDBServiceException,
 } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
@@ -93,6 +95,91 @@ export async function updateItem(
   } catch (error) {
     const err = handleDynamoError(error, "updateItem", { tableName, key });
     logger.error("DynamoDB updateItem failed", { error: err.message, tableName, key });
+    return { error: err };
+  }
+}
+
+export async function queryItems(
+  tableName: string,
+  options?: {
+    indexName?: string;
+    keyConditionExpression?: string;
+    filterExpression?: string;
+    expressionAttributeValues?: Record<string, any>;
+    expressionAttributeNames?: Record<string, string>;
+    limit?: number;
+    scanIndexForward?: boolean;
+  }
+): Promise<DynamoReturn<DynamoItem[]>> {
+  const params = {
+    TableName: tableName,
+    IndexName: options?.indexName,
+    KeyConditionExpression: options?.keyConditionExpression,
+    FilterExpression: options?.filterExpression,
+    ExpressionAttributeValues: options?.expressionAttributeValues 
+      ? marshall(options.expressionAttributeValues, { removeUndefinedValues: true })
+      : undefined,
+    ExpressionAttributeNames: options?.expressionAttributeNames,
+    Limit: options?.limit,
+    ScanIndexForward: options?.scanIndexForward,
+  };
+
+  try {
+    const { Items } = await dynamoClient.send(new QueryCommand(params));
+    const items = Items ? Items.map(item => unmarshall(item)) : [];
+    logger.debug("DynamoDB queryItems success", { 
+      tableName, 
+      indexName: options?.indexName,
+      itemCount: items.length 
+    });
+    return { data: items };
+  } catch (error) {
+    const err = handleDynamoError(error, "queryItems", { 
+      tableName, 
+      indexName: options?.indexName 
+    });
+    logger.error("DynamoDB queryItems failed", { 
+      error: err.message, 
+      tableName, 
+      indexName: options?.indexName 
+    });
+    return { error: err };
+  }
+}
+
+export async function scanItems(
+  tableName: string,
+  options?: {
+    filterExpression?: string;
+    expressionAttributeValues?: Record<string, any>;
+    expressionAttributeNames?: Record<string, string>;
+    limit?: number;
+  }
+): Promise<DynamoReturn<DynamoItem[]>> {
+  const params = {
+    TableName: tableName,
+    FilterExpression: options?.filterExpression,
+    ExpressionAttributeValues: options?.expressionAttributeValues 
+      ? marshall(options.expressionAttributeValues, { removeUndefinedValues: true })
+      : undefined,
+    ExpressionAttributeNames: options?.expressionAttributeNames,
+    Limit: options?.limit,
+  };
+
+  try {
+    const { Items } = await dynamoClient.send(new ScanCommand(params));
+    const items = Items ? Items.map(item => unmarshall(item)) : [];
+    logger.debug("DynamoDB scanItems success", { 
+      tableName, 
+      itemCount: items.length 
+    });
+    return { data: items };
+  } catch (error) {
+    const err = handleDynamoError(error, "scanItems", { tableName });
+    logger.error("DynamoDB scanItems failed", { 
+      error: err.message, 
+      tableName 
+    });
     return { error: err };
   }
 }
