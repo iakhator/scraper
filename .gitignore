@@ -48,3 +48,5 @@ node_modules
 
 # Authentication files
 .npmrc
+volume/
+volume
