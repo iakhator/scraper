@@ -1,6 +1,6 @@
 {
   "name": "@iakhator/scraper-aws-wrapper",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "AWS wrapper with DynamoDB and SQS clients for the scraper project",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
