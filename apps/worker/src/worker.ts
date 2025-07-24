@@ -94,9 +94,6 @@ export class Worker {
     const queueMessage =  JSON.parse(sqsMessage.Body || '{}');
     const receiptHandle = sqsMessage.ReceiptHandle;
 
-    let currentRetry = queueMessage.retryCount || 0;
-    let maxRetries = queueMessage.maxRetries || 3;
-
     if(!queueMessage || !queueMessage.jobId || !queueMessage.url) { 
       logger.warn('Received invalid queue message, skipping', { queueMessage, receiptHandle });
       return;
@@ -144,9 +141,9 @@ export class Worker {
 
       // Delete message from queue
       await this.queueService.deleteMessage({ 
-          QueueUrl: process.env.QUEUE_URL!, 
-          ReceiptHandle: receiptHandle! 
-        });
+        QueueUrl: process.env.QUEUE_URL!, 
+        ReceiptHandle: receiptHandle! 
+      });
 
       logger.info(`Successfully processed job: ${queueMessage.jobId}`);
     } catch (error: any) {

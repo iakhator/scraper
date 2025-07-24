@@ -46,11 +46,11 @@ router.post('/urls', async (req, res) => {
       maxRetries: 3,
     });
 
-    // // Broadcast job submission via WebSocket
-    // broadcastJobUpdate(jobId, 'queued', {
-    //   url: value.url,
-    //   priority: value.priority
-    // });
+    // Broadcast job submission via WebSocket
+    broadcastJobUpdate(jobId, 'queued', {
+      url: value.url,
+      priority: value.priority
+    });
 
     res.status(201).json({ jobId, status: 'queued' });
   } catch (error: any) {

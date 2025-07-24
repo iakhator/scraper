@@ -7,7 +7,7 @@ const env = cleanEnv(process.env, {
   AWS_REGION: str({ default: 'us-east-1' }),
   AWS_ACCESS_KEY_ID: str(),
   AWS_SECRET_ACCESS_KEY: str(),
-  DYNAMODB_ENDPOINT: str({ default: undefined }),
+  LOCALSTACK_ENDPOINT: str({ default: undefined }),
   SQS_ENDPOINT: str({ default: undefined }),
   SQS_QUEUE_URL: url(),
   SQS_DLQ_URL: url({ default: undefined }),
@@ -42,17 +42,8 @@ const clientConfig = {
   },
   maxAttempts: 3,
   retryMode: 'standard',
+  ...(env.LOCALSTACK_ENDPOINT ? { endpoint: env.LOCALSTACK_ENDPOINT } : {})
 };
 
-const dynamoDBClientConfig = {
-  endpoint: env.DYNAMODB_ENDPOINT,
-  ...clientConfig
-}
-
-const sqsClientConfig = {
-  endpoint: env.SQS_ENDPOINT,
-  ...clientConfig
-}
-
-export const dynamoClient = new DynamoDBClient(dynamoDBClientConfig);
-export const sqsClient = new SQSClient(sqsClientConfig);
+export const dynamoClient = new DynamoDBClient(clientConfig);
+export const sqsClient = new SQSClient(clientConfig);
