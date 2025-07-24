@@ -1,6 +1,6 @@
 {
   "name": "@iakhator/scraper-core",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Core business services for the scraper project - Database, Queue, and Scraper services",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
