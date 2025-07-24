@@ -21,8 +21,8 @@
     "@aws-sdk/client-dynamodb": "^3.645.0",
     "@aws-sdk/client-sqs": "^3.645.0",
     "@aws-sdk/util-dynamodb": "^3.645.0",
-    "@iakhator/scraper-logger": "^1.0.3",
-    "@iakhator/scraper-types": "^1.0.3",
+    "@iakhator/scraper-logger": "^1.0.4",
+    "@iakhator/scraper-types": "^1.0.4",
     "envalid": "^8.0.0"
   },
   "devDependencies": {

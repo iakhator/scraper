@@ -7,7 +7,7 @@ const env = cleanEnv(process.env, {
   AWS_REGION: str({ default: 'us-east-1' }),
   AWS_ACCESS_KEY_ID: str(),
   AWS_SECRET_ACCESS_KEY: str(),
-  DYNAMODB_ENDPOINT: str(),
+  LOCAL_ENDPOINT: str({ default: undefined }),
   SQS_QUEUE_URL: url(),
   SQS_DLQ_URL: url({ default: undefined }),
   DYNAMODB_TABLE: str({ default: 'scrape_db' }),
@@ -34,6 +34,7 @@ export const config: AWSWrapperConfig = {
 };
 
 const clientConfig = {
+  endpoint: env.LOCAL_ENDPOINT,
   region: env.AWS_REGION,
   credentials: {
     accessKeyId: env.AWS_ACCESS_KEY_ID,
@@ -43,10 +44,5 @@ const clientConfig = {
   retryMode: 'standard',
 };
 
-const dynamoClientConfig = {
-  ...clientConfig,
-  endpoint: env.DYNAMODB_ENDPOINT,
-}
-
-export const dynamoClient = new DynamoDBClient(dynamoClientConfig);
+export const dynamoClient = new DynamoDBClient(clientConfig);
 export const sqsClient = new SQSClient(clientConfig);
