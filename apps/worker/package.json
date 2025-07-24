@@ -18,10 +18,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@iakhator/scraper-aws-wrapper": "^1.0.4",
-    "@iakhator/scraper-core": "^1.0.4",
-    "@iakhator/scraper-logger": "^1.0.4",
-    "@iakhator/scraper-types": "^1.0.4",
+    "@iakhator/scraper-aws-wrapper": "^1.0.5",
+    "@iakhator/scraper-core": "^1.0.5",
+    "@iakhator/scraper-logger": "^1.0.5",
+    "@iakhator/scraper-types": "^1.0.5",
     "dotenv": "^17.2.0",
     "envalid": "^8.1.0",
     "ws": "^8.18.0"

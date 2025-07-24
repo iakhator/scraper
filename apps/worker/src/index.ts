@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Worker } from './worker';
 import { logger } from '@iakhator/scraper-logger';
 import { QueueService, DatabaseService, ScraperService } from '@iakhator/scraper-core';

@@ -94,82 +94,65 @@ export class Worker {
     const queueMessage =  JSON.parse(sqsMessage.Body || '{}');
     const receiptHandle = sqsMessage.ReceiptHandle;
 
+    let currentRetry = queueMessage.retryCount || 0;
+    let maxRetries = queueMessage.maxRetries || 3;
+
     if(!queueMessage || !queueMessage.jobId || !queueMessage.url) { 
       logger.warn('Received invalid queue message, skipping', { queueMessage, receiptHandle });
       return;
     }
 
-    // try {
-    //   logger.info(`Processing job: ${queueMessage.jobId} for URL: ${queueMessage.url}`);
+    try {
+
+      this.wsClient?.sendJobUpdate(queueMessage.jobId, 'processing', {
+        url: queueMessage.url,
+        startedAt: new Date().toISOString()
+      });
+     
+       await this.databaseService.updateJob(queueMessage.jobId, {
+        status: 'processing',
+      });
+
+      const scrapedData = await this.scraperService.scrapeUrl(queueMessage.url);
+
+      const content: ScrapedContent = {
+        PK: `CONTENT#${queueMessage.jobId}`,
+        SK: `CONTENT`,
+        id: queueMessage.jobId,
+        url: queueMessage.url,
+        title: scrapedData.title || '',
+        content: scrapedData.content || '',
+        metadata: scrapedData.metadata || {},
+        scrapedAt: new Date().toISOString(),
+        processingTime: scrapedData.processingTime || 0,
+      };
+
+      await this.databaseService.saveScrapedContent(content);
       
-    //   // Notify start of processing
-    //   this.wsClient?.sendJobUpdate(queueMessage.jobId, 'processing', {
-    //     url: queueMessage.url,
-    //     startedAt: new Date().toISOString()
-    //   });
-      
-    //   // Update job status to processing
-    //   const updateResult = await this.databaseService.updateJob(queueMessage.jobId, {
-    //     status: 'processing',
-    //   });
+      // Update job status to completed
+      await this.databaseService.updateJob(queueMessage.jobId, {
+        status: 'completed',
+        completedAt: new Date().toISOString(),
+      });
 
-    //   if (updateResult.error) {
-    //     throw new Error(`Failed to update job status to processing: ${updateResult.error.message}`);
-    //   }
+      this.wsClient?.sendJobUpdate(queueMessage.jobId, 'completed', {
+        url: queueMessage.url,
+        title: scrapedData.title,
+        completedAt: new Date().toISOString(),
+        processingTime: scrapedData.processingTime
+      });
 
-    //   const scrapedData = await this.scraperService.scrapeUrl(queueMessage.url);
+      // Delete message from queue
+      await this.queueService.deleteMessage({ 
+          QueueUrl: process.env.QUEUE_URL!, 
+          ReceiptHandle: receiptHandle! 
+        });
 
-    //   const content: ScrapedContent = {
-    //     PK: `CONTENT#${queueMessage.jobId}`,
-    //     SK: `CONTENT`,
-    //     id: queueMessage.jobId,
-    //     url: queueMessage.url,
-    //     title: scrapedData.title || '',
-    //     content: scrapedData.content || '',
-    //     metadata: scrapedData.metadata || {},
-    //     scrapedAt: new Date().toISOString(),
-    //     processingTime: scrapedData.processingTime || 0,
-    //   };
-
-    //   // Save scraped content
-    //   const saveContentResult = await this.databaseService.saveScrapedContent(content);
-    //   if (saveContentResult.error) {
-    //     throw new Error(`Failed to save scraped content: ${saveContentResult.error.message}`);
-    //   }
-
-    //   // Update job status to completed
-    //   const completeResult = await this.databaseService.updateJob(queueMessage.jobId, {
-    //     status: 'completed',
-    //     completedAt: new Date().toISOString(),
-    //   });
-
-    //   if (completeResult.error) {
-    //     throw new Error(`Failed to update job status to completed: ${completeResult.error.message}`);
-    //   }
-
-    //   // Notify completion
-    //   this.wsClient?.sendJobUpdate(queueMessage.jobId, 'completed', {
-    //     url: queueMessage.url,
-    //     title: scrapedData.title,
-    //     completedAt: new Date().toISOString(),
-    //     processingTime: scrapedData.processingTime
-    //   });
-
-
-    //   try {
-    //     await this.queueService.deleteMessage({ 
-    //       QueueUrl: process.env.QUEUE_URL!, 
-    //       ReceiptHandle: receiptHandle! 
-    //     });
-    //   } catch (deleteError: any) {
-    //     logger.error(`Failed to delete message after processing job ${queueMessage.jobId}: ${deleteError.message}`);
-    //   }
-      
-    //   logger.info(`Successfully processed job: ${queueMessage.jobId}`);
-    // } catch (error: any) {
-    //   logger.error(`Failed to process job ${queueMessage.jobId}: ${error.message}`, error);
-    //   await this.handleFailedJob(queueMessage, receiptHandle, error);
-    // }
+      logger.info(`Successfully processed job: ${queueMessage.jobId}`);
+    } catch (error: any) {
+      logger.error(`Failed to process job: ${queueMessage.jobId}`, error);
+      await this.handleFailedJob(queueMessage, receiptHandle, error);
+    }
   }
 
   private async handleFailedJob(queueMessage: QueueMessage, receiptHandle: string | undefined, error: any): Promise<void> {
@@ -185,15 +168,10 @@ export class Worker {
         });
 
         // Update job for retry
-        const retryResult = await this.databaseService.updateJob(queueMessage.jobId, {
+         await this.databaseService.updateJob(queueMessage.jobId, {
           status: 'queued',
           retryCount: newRetryCount,
         });
-
-        if (retryResult.error) {
-          logger.error(`Failed to update job for retry: ${retryResult.error.message}`);
-          throw retryResult.error;
-        }
 
         // Notify retry
         this.wsClient?.sendJobUpdate(queueMessage.jobId, 'retrying', {
@@ -207,16 +185,11 @@ export class Worker {
         logger.info(`Retrying job ${queueMessage.jobId} (attempt ${newRetryCount}/${maxRetries})`);
       } else {
         // Mark job as permanently failed
-        const failResult = await this.databaseService.updateJob(queueMessage.jobId, {
+        await this.databaseService.updateJob(queueMessage.jobId, {
           status: 'failed',
           errorMessage: error.message,
           completedAt: new Date().toISOString(),
         });
-
-        if (failResult.error) {
-          logger.error(`Failed to mark job as failed: ${failResult.error.message}`);
-          throw failResult.error;
-        }
         
         // Notify permanent failure
         this.wsClient?.sendJobUpdate(queueMessage.jobId, 'failed', {
@@ -235,16 +208,12 @@ export class Worker {
         logger.error(`Job permanently failed after ${maxRetries} retries: ${queueMessage.jobId}`);
       }
       
-      // Delete message from queue
-      try {
-        await this.queueService.deleteMessage({ 
-          QueueUrl: process.env.QUEUE_URL!, 
-          ReceiptHandle: receiptHandle! 
-        });
-      } catch (deleteError: any) {
-        logger.error(`Failed to delete message after handling failed job ${queueMessage.jobId}: ${deleteError.message}`);
-        // Continue execution - job status was updated even if message deletion failed
-      }
+      
+      await this.queueService.deleteMessage({ 
+        QueueUrl: process.env.QUEUE_URL!, 
+        ReceiptHandle: receiptHandle! 
+      });
+     
     } catch (retryError: any) {
       const errorMessage = `Failed to handle failed job ${queueMessage.jobId}: ${retryError.message}`;
       logger.error(errorMessage, retryError);
