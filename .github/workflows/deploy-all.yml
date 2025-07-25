@@ -70,7 +70,7 @@ jobs:
   
   deploy-worker:
     needs: detect-changes
-    if: needs.detect-changes.outputs.workers-changed == 'true'
+    if: needs.detect-changes.outputs.worker-changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read

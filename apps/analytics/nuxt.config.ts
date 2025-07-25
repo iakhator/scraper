@@ -2,22 +2,13 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   devtools: { enabled: true },
+  ssr: false,
   modules: ['@nuxt/eslint', '@nuxtjs/tailwindcss'],
   css: ['~/assets/css/main.css'],
-  nitro: {
-    devProxy: {
-      '/api': {
-        target: process.env.QUEUE_SERVICE_URL || 'http://localhost:3001',
-        changeOrigin: true,
-        secure: false,
-        ws: true
-      }
-    }
-  },
   runtimeConfig: {
     public: {
-      queueServiceUrl: process.env.QUEUE_SERVICE_URL || 'http://localhost:3001',
-      wsUrl: process.env.WS_URL || 'ws://localhost:3001/ws'
+      wsUrl: process.env.WS_URL,
+      baseUrl: process.env.BASE_URL
     }
   }
 })
