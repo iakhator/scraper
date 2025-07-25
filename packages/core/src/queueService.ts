@@ -7,7 +7,7 @@ import { logger } from '@iakhator/scraper-logger';
 type ReceiveMessageParams = Omit<ReceiveMessageCommandInput, 'QueueUrl'>;
 
 interface ISQSOperations{
-  sendMessage: (message: QueueMessage, type?: string) => Promise<{ messageId: string }>,
+  sendMessage: (message: QueueMessage) => Promise<{ messageId: string }>,
   receiveMessages: (params?: ReceiveMessageParams) => Promise<{ messages: Message[] }>,
   deleteMessage: (receiptHandle: DeleteMessageCommandInput) => Promise<void>
 }
@@ -19,9 +19,9 @@ export class QueueService {
     this.sqs = sqs;
   }
 
-  async sendMessage(message: QueueMessage, type?: string): Promise<{ messageId: string }> {
+  async sendMessage(message: QueueMessage): Promise<{ messageId: string }> {
     try {
-      const result = await this.sqs.sendMessage(message, type);
+      const result = await this.sqs.sendMessage(message);
 
       logger.info(`Message sent to queue: ${message.jobId}`);
       return result

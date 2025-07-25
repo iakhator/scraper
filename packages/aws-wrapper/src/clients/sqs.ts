@@ -16,12 +16,11 @@ import { logger } from '@iakhator/scraper-logger';
  */
 export async function sendMessage(
   message: QueueMessage,
-  type: string = 'default'
 ): Promise<{ messageId: string }> {
   
   try {
     const result = await sqsClient.send(new SendMessageCommand({
-        QueueUrl: type === 'default' ? config.queueUrl : config.dlqUrl,
+        QueueUrl: config.queueUrl,
         MessageBody: JSON.stringify(message),
         MessageAttributes: {
           priority: {

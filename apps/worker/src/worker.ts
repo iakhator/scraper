@@ -18,6 +18,7 @@ export class Worker {
   private isRunning = false;
   private pollingInterval = 10000; // Poll every 10 seconds
   private errorRetryInterval = 30000; // Wait 30 seconds on error
+  private maxRetries = 3;
 
   constructor(dependencies: WorkerDependencies) {
     this.queueService = dependencies.queueService;
@@ -46,36 +47,53 @@ export class Worker {
       
       while (this.isRunning) {
         try {
-          logger.debug('Polling SQS queue for messages...');
-          const startTime = Date.now();
-          
-          // Configure SQS polling parameters
           const messages = await this.queueService.receiveMessages({
             MaxNumberOfMessages: 10,
             WaitTimeSeconds: 20,  
             VisibilityTimeout: 300   
           });
-          
-          const pollDuration = Date.now() - startTime;
-          
           if (messages.length === 0) {
-            logger.info(`No messages in queue after ${pollDuration}ms polling. Next poll in ${this.pollingInterval/1000}s`);
-            await this.sleep(this.pollingInterval);
+            await this.sleep(1000); // Prevent tight loop
             continue;
           }
 
-          logger.info(`Found ${messages.length} messages after ${pollDuration}ms polling`);
-          
-          // Process messages sequentially to avoid overwhelming the scraper
-          for (const message of messages) {
-            if (!this.isRunning) break; // Stop if worker is shutting down
-            await this.processMessage(message);
-          }
-          
+          const processingPromises = messages.map((message) => this.processMessage(message));
+          await Promise.all(processingPromises);
         } catch (error: any) {
-          logger.error(`Worker polling error: ${error.message}`, error);
-          await this.sleep(this.errorRetryInterval);
+          logger.error(`Worker error: ${error.message}`, error);
+          await this.sleep(5000); // Wait before retrying
         }
+        // try {
+        //   logger.debug('Polling SQS queue for messages...');
+        //   const startTime = Date.now();
+          
+        //   // Configure SQS polling parameters
+        //   const messages = await this.queueService.receiveMessages({
+        //     MaxNumberOfMessages: 10,
+        //     WaitTimeSeconds: 20,  
+        //     VisibilityTimeout: 300   
+        //   });
+          
+        //   const pollDuration = Date.now() - startTime;
+          
+        //   if (messages.length === 0) {
+        //     logger.info(`No messages in queue after ${pollDuration}ms polling. Next poll in ${this.pollingInterval/1000}s`);
+        //     await this.sleep(this.pollingInterval);
+        //     continue;
+        //   }
+
+        //   logger.info(`Found ${messages.length} messages after ${pollDuration}ms polling`);
+          
+        //   // Process messages sequentially to avoid overwhelming the scraper
+          // for (const message of messages) {
+          //   if (!this.isRunning) break; // Stop if worker is shutting down
+          //   await this.processMessage(message);
+          // }
+          
+        // } catch (error: any) {
+        //   logger.error(`Worker polling error: ${error.message}`, error);
+        //   await this.sleep(this.errorRetryInterval);
+        // }
       }
     } catch (error: any) {
       logger.error(`Worker startup failed: ${error.message}`, error);
@@ -90,12 +108,22 @@ export class Worker {
     logger.info('Scraper Worker stopped');
   }
 
-  private async processMessage(sqsMessage: Message): Promise<void> {
-    const queueMessage =  JSON.parse(sqsMessage.Body || '{}');
-    const receiptHandle = sqsMessage.ReceiptHandle;
+  private async processMessage(message: Message): Promise<void> {
+    // const queueMessage =  JSON.parse(sqsMessage.Body || '{}');
+    // const receiptHandle = message.ReceiptHandle;
 
-    if(!queueMessage || !queueMessage.jobId || !queueMessage.url) { 
-      logger.warn('Received invalid queue message, skipping', { queueMessage, receiptHandle });
+    if(!message.Body) { 
+      logger.error('Received message with no body');
+      await this.queueService.deleteMessage({QueueUrl: process.env.SQS_QUEUE_URL!, ReceiptHandle: message.ReceiptHandle!});
+      return;
+    }
+
+    let queueMessage: QueueMessage;
+    try {
+      queueMessage = JSON.parse(message.Body);
+    } catch (error: any) {
+      logger.error(`Failed to parse message body: ${error.message}`);
+      await this.queueService.deleteMessage({QueueUrl: process.env.SQS_QUEUE_URL!, ReceiptHandle: message.ReceiptHandle!});
       return;
     }
 
@@ -106,7 +134,7 @@ export class Worker {
         startedAt: new Date().toISOString()
       });
      
-       await this.databaseService.updateJob(queueMessage.jobId, {
+      await this.databaseService.updateJob(queueMessage.jobId, {
         status: 'processing',
       });
 
@@ -138,79 +166,54 @@ export class Worker {
         completedAt: new Date().toISOString(),
         processingTime: scrapedData.processingTime
       });
-
+      
       // Delete message from queue
       await this.queueService.deleteMessage({ 
-        QueueUrl: process.env.QUEUE_URL!, 
-        ReceiptHandle: receiptHandle! 
+        QueueUrl: process.env.SQS_QUEUE_URL!, 
+        ReceiptHandle: message.ReceiptHandle 
       });
 
       logger.info(`Successfully processed job: ${queueMessage.jobId}`);
     } catch (error: any) {
       logger.error(`Failed to process job: ${queueMessage.jobId}`, error);
-      await this.handleFailedJob(queueMessage, receiptHandle, error);
+      await this.handleFailedJob(queueMessage, message, error);
     }
   }
 
-  private async handleFailedJob(queueMessage: QueueMessage, receiptHandle: string | undefined, error: any): Promise<void> {
+  private async handleFailedJob(queueMessage: QueueMessage, message: Message, error: any): Promise<void> {
+     const receiveCount = parseInt(message.Attributes?.ApproximateReceiveCount || '1');
+     const updates: Partial<ScrapeJob> = {
+        status: receiveCount >= this.maxRetries ? 'failed' : 'queued',
+        errorMessage: error.message,
+        retryCount: receiveCount,
+      };
+
     try {
-      const newRetryCount = (queueMessage.retryCount || 0) + 1;
-      const maxRetries = queueMessage.maxRetries || 3;
-
-      if (newRetryCount <= maxRetries) {
-        await this.queueService.sendMessage({
-          ...queueMessage,
-          retryCount: newRetryCount,
-          error: error.message,
-        });
-
-        // Update job for retry
-         await this.databaseService.updateJob(queueMessage.jobId, {
-          status: 'queued',
-          retryCount: newRetryCount,
-        });
-
-        // Notify retry
-        this.wsClient?.sendJobUpdate(queueMessage.jobId, 'retrying', {
+      if (receiveCount >= this.maxRetries) {
+        updates.completedAt = new Date().toISOString();
+        // Let SQS move the message to the DLQ automatically after maxReceiveCount
+          this.wsClient?.sendJobUpdate(queueMessage.jobId, 'sendtodlq', {
           url: queueMessage.url,
-          retryCount: newRetryCount,
-          maxRetries,
+          retryCount: receiveCount,
           error: error.message,
           retryAt: new Date().toISOString()
         });
-
-        logger.info(`Retrying job ${queueMessage.jobId} (attempt ${newRetryCount}/${maxRetries})`);
+        logger.error(`Job moved to DLQ after ${receiveCount} attempts: ${queueMessage.jobId}`);
+        // Optionally, send to DLQ manually as a fallback (not required with proper redrive policy)
+        // await this.queueService.sendToDLQ(queueMessage, receiveCount);
       } else {
-        // Mark job as permanently failed
-        await this.databaseService.updateJob(queueMessage.jobId, {
-          status: 'failed',
-          errorMessage: error.message,
-          completedAt: new Date().toISOString(),
-        });
-        
-        // Notify permanent failure
-        this.wsClient?.sendJobUpdate(queueMessage.jobId, 'failed', {
+        logger.info(`Job ${queueMessage.jobId} failed (attempt ${receiveCount}), will retry`);
+          this.wsClient?.sendJobUpdate(queueMessage.jobId, 'failed', {
           url: queueMessage.url,
           error: error.message,
-          retryCount: newRetryCount,
-          maxRetries,
+          retryCount: receiveCount,
+          maxRetries: this.maxRetries,
           failedAt: new Date().toISOString()
         });
-        
-        // await this.queueService.sendMessage({
-        //   jobId: queueMessage.jobId,
-        //   url: queueMessage.url,
-        //   priority: 'low'}, 'dlq');
-
-        logger.error(`Job permanently failed after ${maxRetries} retries: ${queueMessage.jobId}`);
       }
-      
-      
-      await this.queueService.deleteMessage({ 
-        QueueUrl: process.env.QUEUE_URL!, 
-        ReceiptHandle: receiptHandle! 
-      });
-     
+
+      await this.databaseService.updateJob(queueMessage.jobId, updates);
+      // Do NOT delete the message on failure to allow SQS to retry
     } catch (retryError: any) {
       const errorMessage = `Failed to handle failed job ${queueMessage.jobId}: ${retryError.message}`;
       logger.error(errorMessage, retryError);

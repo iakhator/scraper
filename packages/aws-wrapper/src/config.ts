@@ -8,7 +8,6 @@ const env = cleanEnv(process.env, {
   AWS_ACCESS_KEY_ID: str(),
   AWS_SECRET_ACCESS_KEY: str(),
   LOCALSTACK_ENDPOINT: str({ default: undefined }),
-  SQS_ENDPOINT: str({ default: undefined }),
   SQS_QUEUE_URL: url(),
   SQS_DLQ_URL: url({ default: undefined }),
   DYNAMODB_TABLE: str({ default: 'scrape_db' }),
