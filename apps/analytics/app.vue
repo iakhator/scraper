@@ -252,7 +252,7 @@ async function submitUrl() {
   isSubmitting.value = true
   
   try {
-    const response = await fetch('http://localhost:3001/api/urls', {
+    const response = await fetch('https://scraper-queue.onrender.com/api/urls', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -341,7 +341,7 @@ onMounted(() => {
 // Fetch existing jobs from the API
 async function fetchExistingJobs() {
   try {
-    const response = await $fetch('http://localhost:3001/api/jobs')
+    const response = await $fetch('https://scraper-queue.onrender.com/api/jobs')
 
     console.log(response, 'response')
     
