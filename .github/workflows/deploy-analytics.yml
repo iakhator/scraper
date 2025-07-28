@@ -1,7 +1,7 @@
 name: Analytics CI
 
 on:
-  pull_request:
+  push:
     branches: [ main ]
     paths:
       - 'apps/analytics/**'
@@ -17,4 +17,4 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Validate Dockerfile
-      run: docker build --target build apps/analytics/Dockerfile .
+      run: docker build --target build -f apps/analytics/Dockerfile .
