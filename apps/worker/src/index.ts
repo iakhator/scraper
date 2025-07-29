@@ -12,8 +12,8 @@ function createWorker(): Worker {
   const databaseService = new DatabaseService(dynamodb);
   const scraperService = new ScraperService();
   
-  const queueServiceUrl = process.env.QUEUE_SERVICE_URL || 'ws://localhost:3001';
-  const wsUrl = queueServiceUrl.replace(/^http/, 'ws') + '/ws';
+  const queueServiceUrl = process.env.QUEUE_SOCKET_URL || 'ws://queue:3001';
+  const wsUrl = queueServiceUrl + '/ws'
   
   logger.info(`Creating WebSocket client with URL: ${wsUrl}`);
   const wsClient = new WebSocketClient(wsUrl);

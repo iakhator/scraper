@@ -131,24 +131,28 @@ sequenceDiagram
 ## 🎯 Key Features
 
 ### ⚡ High Performance
+
 - **Async Processing**: Non-blocking job queue with AWS SQS
 - **Intelligent Scraping**: Static-first approach with dynamic fallback
 - **Cluster Support**: Multi-worker processing with load balancing
 - **Batch Processing**: Process up to 10 messages simultaneously
 
 ### 🔧 Smart Scraping Engine
+
 - **Dual Strategy**: Cheerio (fast) → Puppeteer (comprehensive)
 - **Auto-Fallback**: Graceful degradation for complex sites
 - **Timeout Handling**: Configurable timeouts with partial content recovery
 - **User Agent Rotation**: Avoid detection with realistic headers
 
 ### 📊 Production Ready
+
 - **Comprehensive Logging**: Winston with daily rotation
 - **Health Monitoring**: Built-in health checks and metrics
 - **Error Recovery**: Automatic retries with exponential backoff
 - **Graceful Shutdown**: Clean worker termination
 
 ### 🚀 Scalability
+
 - **Horizontal Scaling**: Deploy multiple worker instances
 - **Queue Management**: SQS handles message distribution
 - **Database Optimization**: DynamoDB with proper indexing
@@ -187,6 +191,7 @@ cd ../analytics && npm install
 Create `.env` files for each app:
 
 **`apps/queue/.env`**
+
 ```bash
 # AWS Configuration
 AWS_REGION=us-east-1
@@ -212,6 +217,7 @@ MAX_CONCURRENT_PAGES=4
 ```
 
 **`apps/analytics/.env`**
+
 ```bash
 # Same AWS configuration as above
 AWS_REGION=us-east-1
@@ -226,11 +232,13 @@ NODE_ENV=development
 ### 3. AWS Resources Setup
 
 #### Option A: Manual Setup
+
 1. Create SQS Queue: `scraper-queue`
-2. Create DLQ: `scraper-dlq` 
+2. Create DLQ: `scraper-dlq`
 3. Create DynamoDB table: `scrape_db`
 
 #### Option B: AWS CLI
+
 ```bash
 # Create SQS queue
 aws sqs create-queue --queue-name scraper-queue
@@ -259,68 +267,6 @@ cd apps/analytics && npm run dev
 
 # Start worker separately
 cd apps/queue && npm run worker
-```
-
-### 5. Test the System
-
-```bash
-# Submit a single URL
-curl -X POST http://localhost:3000/api/urls \
-  -H "Content-Type: application/json" \
-  -d '{
-    "url": "https://example.com",
-    "priority": "high"
-  }'
-
-# Submit multiple URLs
-curl -X POST http://localhost:3000/api/urls/bulk \
-  -H "Content-Type: application/json" \
-  -d '{
-    "urls": ["https://example.com", "https://github.com"],
-    "priority": "medium"
-  }'
-```
-
-## 📁 Project Structure
-
-```
-scraper/
-├── 📄 README.md
-├── 🐳 docker-compose.yml          # Production setup
-├── 🐳 docker-compose.dev.yml      # Development setup
-├── 📦 package.json                # Root workspace config
-└── apps/
-    ├── 📊 analytics/               # Analytics dashboard
-    │   ├── 🐳 Dockerfile
-    │   ├── ⚙️ nuxt.config.ts
-    │   ├── 📦 package.json
-    │   └── 📄 app.vue
-    └── 🔧 queue/                   # Main processing engine
-        ├── 🐳 Dockerfile
-        ├── 📦 package.json
-        ├── ⚙️ tsconfig.json
-        └── src/
-            ├── 🚀 index.ts         # API server
-            ├── 👷 worker.ts        # Background processor
-            ├── 📊 examples/        # Usage examples
-            ├── 🔌 routes/          # API endpoints
-            │   └── api.ts
-            ├── 🔧 services/        # Business logic
-            │   ├── queueService.ts
-            │   ├── scraperService.ts
-            │   └── databaseService.ts
-            ├── ☁️ aws-wrapper/     # AWS integrations
-            │   ├── config.ts
-            │   ├── index.ts
-            │   └── clients/
-            │       ├── sqs.ts
-            │       └── dynamodb.ts
-            ├── 🛠️ utils/           # Utilities
-            │   ├── logger.ts
-            │   ├── validators.ts
-            │   └── env.ts
-            └── 📝 types/           # TypeScript definitions
-                └── index.ts
 ```
 
 ## 🔧 Configuration
@@ -469,6 +415,7 @@ console.log(metrics);
 ### Response Formats
 
 **Success Response:**
+
 ```json
 {
   "jobId": "uuid",
@@ -477,6 +424,7 @@ console.log(metrics);
 ```
 
 **Error Response:**
+
 ```json
 {
   "error": "Invalid URL: must be a valid URL"
@@ -566,6 +514,7 @@ curl -X POST http://localhost:3000/api/urls \
 ### Common Issues
 
 **AWS Credentials Error:**
+
 ```bash
 # Verify credentials
 aws sts get-caller-identity
@@ -576,6 +525,7 @@ export AWS_SECRET_ACCESS_KEY=your_secret
 ```
 
 **Queue Not Processing:**
+
 ```bash
 # Check queue status
 aws sqs get-queue-attributes --queue-url YOUR_QUEUE_URL
@@ -585,6 +535,7 @@ docker-compose logs queue
 ```
 
 **Build Errors:**
+
 ```bash
 # Clean and rebuild
 rm -rf node_modules dist
@@ -595,11 +546,13 @@ npm run build
 ### Performance Tuning
 
 **High Load:**
+
 - Increase `QUEUE_BATCH_SIZE` (max 10)
 - Scale workers: `docker-compose up -d --scale queue=5`
 - Optimize `PAGE_TIMEOUT` based on target sites
 
 **Memory Issues:**
+
 - Reduce `MAX_CONCURRENT_PAGES`
 - Implement worker recycling
 - Monitor Puppeteer cluster usage

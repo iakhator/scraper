@@ -59,6 +59,11 @@ export class Worker {
 
           const processingPromises = messages.map((message) => this.processMessage(message));
           await Promise.all(processingPromises);
+
+          // for (const message of messages) {
+          //   if (!this.isRunning) break; // Stop if worker is shutting down
+          //   await this.processMessage(message);
+          // }
         } catch (error: any) {
           logger.error(`Worker error: ${error.message}`, error);
           await this.sleep(5000); // Wait before retrying

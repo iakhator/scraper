@@ -286,9 +286,6 @@
                    Created
                  </th>
                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                   Title
-                 </th>
-                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                    Actions
                  </th>
                </tr>
@@ -312,11 +309,6 @@
                  </td>
                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                    {{ formatTime(job.createdAt) }}
-                 </td>
-                 <td class="px-6 py-4 whitespace-nowrap">
-                   <div class="text-sm text-gray-900 max-w-xs truncate" :title="job.title || 'N/A'">
-                     {{ job.title || 'N/A' }}
-                   </div>
                  </td>
                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                    <button
@@ -449,6 +441,7 @@ const filteredJobs = computed(() => {
 function updateJobStatus(jobId, status, data) {
   const job = jobs.value.find(j => j.jobId === jobId)
   if (job) {
+    console.log(`Updating job ${jobId} status from ${job.status} to ${status}`)
     job.status = status
     job.lastUpdated = new Date().toISOString()
     
@@ -458,6 +451,8 @@ function updateJobStatus(jobId, status, data) {
       if (data.completedAt) job.completedAt = data.completedAt
       if (data.error) job.error = data.error
     }
+  } else {
+    console.warn(`Job ${jobId} not found in jobs list for status update`)
   }
 }
 
@@ -487,16 +482,53 @@ async function submitUrl() {
       }
       
       jobs.value.unshift(newJob)
-      subscribeToJob(result.jobId)
+      
+      // Subscribe to job with a small delay to ensure WebSocket is ready
+      setTimeout(() => {
+        subscribeToJob(result.jobId)
+      }, 100)
+      
       urlInput.value = ''
       
       console.log('URL submitted successfully:', result)
+      showAlert('URL submitted successfully', 'success')
       
     } else if (submissionMode.value === 'bulk') {
       if (!bulkUrls.value.trim()) return
       
       const urls = bulkUrls.value.split('\n').filter(url => url.trim())
+      // const data = {
+      //   urls,
+      //   priority: priority.value
+      // }
+
+      // try {
+      //   const result = await api.post('/api/urls/bulk', data)
+      //   console.log(result, 'result');
+        
+      //   // Add jobs to the table
+      //   for (const url of urls) {
+      //     const newJob = {
+      //       jobId: result.jobId,
+      //       url: url.trim(),
+      //       status: result.status,
+      //       priority: priority.value,
+      //       createdAt: new Date().toISOString(),
+      //       title: null,
+      //       completedAt: null
+      //     }
+          
+      //     jobs.value.unshift(newJob)
+      //     subscribeToJob(result.jobId)
+      //   }
+        
+      //   bulkUrls.value = ''
+      //   showAlert(`${urls.length} URLs submitted successfully`, 'success')
+      // } catch (error) {
+      //   console.log(error)
+      // }
       let successCount = 0
+      const jobIds = []
       
       for (const url of urls) {
         try {
@@ -516,12 +548,19 @@ async function submitUrl() {
           }
           
           jobs.value.unshift(newJob)
-          subscribeToJob(result.jobId)
+          jobIds.push(result.jobId)
           successCount++
         } catch (error) {
           console.error(`Failed to submit ${url}:`, error)
         }
       }
+      
+      // Subscribe to all jobs after they are created
+      setTimeout(() => {
+        jobIds.forEach(jobId => {
+          subscribeToJob(jobId)
+        })
+      }, 100)
       
       bulkUrls.value = ''
       showAlert(`${successCount} of ${urls.length} URLs submitted successfully`, 'success')
@@ -554,6 +593,7 @@ async function submitFile() {
   try {
     const { api } = useApi()
     let successCount = 0
+    const jobIds = []
     
     for (const url of filePreview.value) {
       try {
@@ -573,12 +613,19 @@ async function submitFile() {
         }
         
         jobs.value.unshift(newJob)
-        subscribeToJob(result.jobId)
+        jobIds.push(result.jobId)
         successCount++
       } catch (error) {
         console.error(`Failed to submit ${url}:`, error)
       }
     }
+    
+    // Subscribe to all jobs after they are created
+    setTimeout(() => {
+      jobIds.forEach(jobId => {
+        subscribeToJob(jobId)
+      })
+    }, 100)
     
     handleFileRemoved()
     showAlert(`${successCount} of ${filePreview.value.length} URLs from file submitted successfully`, 'success')
@@ -678,6 +725,13 @@ const refreshData = async () => {
   isRefreshing.value = true
   try {
     await refreshJobs()
+    
+    // Also check and reconnect WebSocket if needed
+    if (!wsConnected.value || !ws || ws.readyState !== WebSocket.OPEN) {
+      console.log('Reconnecting WebSocket during refresh...')
+      connectWebSocket()
+    }
+    
     showAlert('Data refreshed', 'success')
   } catch (err) {
     console.error('Refresh failed:', err)
@@ -695,9 +749,13 @@ function connectWebSocket() {
     
     ws = createConnection(
       handleWebSocketMessage,
-      () => { wsConnected.value = true },
+      () => { 
+        wsConnected.value = true
+        console.log('WebSocket connection established successfully')
+      },
       () => { 
         wsConnected.value = false
+        console.log('WebSocket disconnected, attempting reconnection...')
         // Attempt to reconnect after 3 seconds
         setTimeout(connectWebSocket, 3000)
       }
@@ -705,6 +763,15 @@ function connectWebSocket() {
     
     if (!ws) {
       console.warn('WebSocket not available (likely SSR)')
+    } else {
+      // Add additional connection state logging
+      ws.addEventListener('open', () => {
+        console.log('WebSocket state: OPEN (ready for subscriptions)')
+      })
+      
+      ws.addEventListener('error', (error) => {
+        console.error('WebSocket error event:', error)
+      })
     }
   } catch (error) {
     console.error('Failed to connect WebSocket:', error)
@@ -713,12 +780,23 @@ function connectWebSocket() {
 
 // Handle WebSocket messages
 function handleWebSocketMessage(message) {
+  console.log('Received WebSocket message:', message)
+  
   switch (message.type) {
     case 'connected':
       console.log('WebSocket client ID:', message.clientId)
       break
       
+    case 'subscribed':
+      console.log(`✅ Successfully subscribed to job: ${message.jobId}`)
+      break
+      
+    case 'unsubscribed':
+      console.log(`❌ Unsubscribed from job: ${message.jobId}`)
+      break
+      
     case 'job-update':
+      console.log(`Job update received for ${message.jobId}: ${message.status}`)
       updateJobStatus(message.jobId, message.status, message.data)
       break
       
@@ -728,12 +806,29 @@ function handleWebSocketMessage(message) {
 }
 
 // Subscribe to job updates
-function subscribeToJob(jobId) {
+function subscribeToJob(jobId, retryCount = 0) {
+  const maxRetries = 3
+  
   if (ws && ws.readyState === WebSocket.OPEN) {
+    console.log(`Subscribing to job: ${jobId}`)
     ws.send(JSON.stringify({
       type: 'subscribe-job',
       jobId
     }))
+  } else {
+    console.warn(`Cannot subscribe to job ${jobId}: WebSocket not ready (state: ${ws?.readyState})`)
+    
+    // Retry subscription if we haven't exceeded max retries
+    if (retryCount < maxRetries) {
+      const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 5000) // Exponential backoff, max 5s
+      console.log(`Retrying subscription to job ${jobId} in ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries})`)
+      
+      setTimeout(() => {
+        subscribeToJob(jobId, retryCount + 1)
+      }, retryDelay)
+    } else {
+      console.error(`Failed to subscribe to job ${jobId} after ${maxRetries} attempts`)
+    }
   }
 }
 </script>

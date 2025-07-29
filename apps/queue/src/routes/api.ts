@@ -17,7 +17,6 @@ const databaseService = new DatabaseService(dynamodb);
 
 // Submit single URL
 router.post('/urls', async (req, res) => {
-  console.log(req.body, 'Bulk URL submission request');
   try {
     const { error, value } = urlSchema.validate(req.body);
     if (error) {
@@ -62,6 +61,7 @@ router.post('/urls', async (req, res) => {
 
 // Submit bulk URLs
 router.post('/urls/bulk', async (req, res) => {
+   console.log(req.body, 'Bulk URL submission request');
   try {
     const { error, value } = bulkUrlSchema.validate(req.body);
     if (error) {
