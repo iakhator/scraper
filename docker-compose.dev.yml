@@ -36,7 +36,7 @@ services:
         - REPO_TOKEN=${REPO_TOKEN}
     environment:
       - NODE_ENV=development
-      - QUEUE_SOCKET_URL=${QUEUE_SOCKET_URL}
+      - WS_URL=${WS_URL}
     env_file:
       - .env
     depends_on:
