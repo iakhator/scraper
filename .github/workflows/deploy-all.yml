@@ -14,6 +14,7 @@ jobs:
     outputs:
       analytics-changed: ${{ steps.changes.outputs.analytics }}
       queue-changed: ${{ steps.changes.outputs.queue }}
+      worker-changed: ${{ steps.changes.outputs.worker }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
