@@ -1,6 +1,6 @@
 export const useApi = () => {
   const getApiUrl = (endpoint) => {
-    const baseUrl = useRuntimeConfig().public.baseUrl
+    const baseUrl = useRuntimeConfig().public.BASE_URL
     
     // Ensure endpoint starts with /
     const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`

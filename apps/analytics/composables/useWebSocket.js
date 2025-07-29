@@ -2,7 +2,7 @@ export const useWebSocket = () => {
   const getWebSocketUrl = () => {
     if (!import.meta.client) return null
     
-     return useRuntimeConfig().public.wsUrl
+     return useRuntimeConfig().public.WS_URL
   }
 
   const createConnection = (onMessage, onConnect, onDisconnect) => {
