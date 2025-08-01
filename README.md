@@ -15,7 +15,6 @@ A high-performance, scalable web scraping system built with **Node.js**, **TypeS
 - [🏗️ Architecture Overview](#️-architecture-overview)
 - [🎯 Key Features](#-key-features)
 - [🚀 Quick Start](#-quick-start)
-- [📁 Project Structure](#-project-structure)
 - [🔧 Configuration](#-configuration)
 - [💡 Usage Examples](#-usage-examples)
 - [📊 Monitoring](#-monitoring)
@@ -28,104 +27,39 @@ A high-performance, scalable web scraping system built with **Node.js**, **TypeS
 ### System Flow Diagram
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor': '#ffffff', 'primaryTextColor': '#000000', 'primaryBorderColor': '#000000', 'lineColor': '#000000', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart TB
-    subgraph "Client Layer"
-        A[Web Client] 
-        B[API Client]
-        C[Bulk Upload]
+    subgraph "Frontend"
+        A[Analytics Dashboard<br/>Port 3000]
     end
     
-    subgraph "API Gateway"
-        D[Analytics App<br/>Port 3001]
-        E[Queue API<br/>Port 3000]
+    subgraph "Backend API"
+        B[Queue Service<br/>Port 3001]
     end
     
     subgraph "Message Queue"
-        F[AWS SQS Queue]
-        G[Dead Letter Queue]
+        C[AWS SQS]
     end
     
-    subgraph "Processing Layer"
-        H[Worker 1]
-        I[Worker 2]
-        J[Worker N]
+    subgraph "Worker"
+        D[Scraper Worker]
     end
     
-    subgraph "Storage Layer"
-        K[AWS DynamoDB]
-        L[Scraped Content]
+    subgraph "Database"
+        E[AWS DynamoDB]
     end
     
-    subgraph "Scraping Engine"
-        M[Static Scraper<br/>Cheerio + Axios]
-        N[Dynamic Scraper<br/>Puppeteer Cluster]
+    subgraph "Real-time"
+        F[WebSocket]
     end
     
-    A --> D
-    B --> E
-    C --> E
-    
-    E --> F
-    F --> H
-    F --> I  
-    F --> J
-    
-    H --> M
-    H --> N
-    I --> M
-    I --> N
-    J --> M
-    J --> N
-    
-    H --> K
-    I --> K
-    J --> K
-    
-    K --> L
-    F -.-> G
-    
-    D --> K
-```
-
-### Message Flow Architecture
-
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant API as Queue API
-    participant SQS as AWS SQS
-    participant W as Worker
-    participant DB as DynamoDB
-    participant S as Scraper
-
-    Note over C,S: Job Submission Flow
-    C->>API: POST /api/urls {url, priority}
-    API->>DB: Save job (status: queued)
-    API->>SQS: Send message to queue
-    API-->>C: Return jobId
-
-    Note over C,S: Processing Flow
-    W->>SQS: Receive messages (batch)
-    SQS-->>W: Return message batch
-    W->>DB: Update status (processing)
-    W->>S: Scrape URL
-    
-    alt Static Content Success
-        S-->>W: Return scraped data
-    else Dynamic Content Needed
-        S->>S: Launch Puppeteer
-        S-->>W: Return dynamic data
-    end
-    
-    W->>DB: Save scraped content
-    W->>DB: Update job (completed)
-    W->>SQS: Delete processed message
-
-    Note over C,S: Error Handling
-    alt Scraping Fails
-        W->>SQS: Re-queue with retry count
-        W->>DB: Update job (failed) after max retries
-    end
+    A -->|Submit URLs<br/>GET /api/jobs<br/>POST /api/urls| B
+    B -->|Queue Jobs| C
+    B -->|Store/Retrieve Jobs| E
+    C -->|Process Jobs| D
+    D -->|Update Status| E
+    D -->|Status Updates| F
+    F -->|Real-time Updates| A
 ```
 
 ## 🎯 Key Features
