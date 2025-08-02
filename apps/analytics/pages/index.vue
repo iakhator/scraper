@@ -27,7 +27,8 @@ const statusFilter = ref('')
 const priorityFilter = ref('')
 const searchQuery = ref('')
 
-let ws = null
+const { $socket } = useNuxtApp();
+
 
 
 // WebSocket connection management
@@ -94,25 +95,6 @@ const filteredJobs = computed(() => {
   return filtered
 })
 
-// Update job status in the table
-function updateJobStatus(jobId, status, data) {
-  const job = jobs.value.find(j => j.jobId === jobId)
-  if (job) {
-    console.log(`Updating job ${jobId} status from ${job.status} to ${status}`)
-    job.status = status
-    job.lastUpdated = new Date().toISOString()
-    
-    // Update additional data if provided
-    if (data) {
-      if (data.title) job.title = data.title
-      if (data.completedAt) job.completedAt = data.completedAt
-      if (data.error) job.error = data.error
-    }
-  } else {
-    console.warn(`Job ${jobId} not found in jobs list for status update`)
-  }
-}
-
 async function submitUrl() {
   isSubmitting.value = true
   
@@ -126,24 +108,6 @@ async function submitUrl() {
         url: urlInput.value.trim(),
         priority: priority.value
       })
-      
-      // Add job to the table
-      const newJob = {
-        jobId: result.jobId,
-        url: urlInput.value.trim(),
-        status: result.status,
-        priority: priority.value,
-        createdAt: new Date().toISOString(),
-        title: null,
-        completedAt: null
-      }
-      
-      jobs.value.unshift(newJob)
-      
-      // Subscribe to job with a small delay to ensure WebSocket is ready
-      setTimeout(() => {
-        subscribeToJob(result.jobId)
-      }, 100)
       
       urlInput.value = ''
       
@@ -185,39 +149,19 @@ async function submitUrl() {
       //   console.log(error)
       // }
       let successCount = 0
-      const jobIds = []
       
       for (const url of urls) {
         try {
-          const result = await api.post('/api/urls', {
+          await api.post('/api/urls', {
             url: url.trim(),
             priority: priority.value
           })
           
-          const newJob = {
-            jobId: result.jobId,
-            url: url.trim(),
-            status: result.status,
-            priority: priority.value,
-            createdAt: new Date().toISOString(),
-            title: null,
-            completedAt: null
-          }
-          
-          jobs.value.unshift(newJob)
-          jobIds.push(result.jobId)
           successCount++
         } catch (error) {
           console.error(`Failed to submit ${url}:`, error)
         }
       }
-      
-      // Subscribe to all jobs after they are created
-      setTimeout(() => {
-        jobIds.forEach(jobId => {
-          subscribeToJob(jobId)
-        })
-      }, 100)
       
       bulkUrls.value = ''
       showAlert(`${successCount} of ${urls.length} URLs submitted successfully`, 'success')
@@ -250,39 +194,19 @@ async function submitFile() {
   try {
     const { api } = useApi()
     let successCount = 0
-    const jobIds = []
-    
+
     for (const url of filePreview.value) {
       try {
-        const result = await api.post('/api/urls', {
+        await api.post('/api/urls', {
           url: url.trim(),
           priority: priority.value
         })
         
-        const newJob = {
-          jobId: result.jobId,
-          url: url.trim(),
-          status: result.status,
-          priority: priority.value,
-          createdAt: new Date().toISOString(),
-          title: null,
-          completedAt: null
-        }
-        
-        jobs.value.unshift(newJob)
-        jobIds.push(result.jobId)
         successCount++
       } catch (error) {
         console.error(`Failed to submit ${url}:`, error)
       }
     }
-    
-    // Subscribe to all jobs after they are created
-    setTimeout(() => {
-      jobIds.forEach(jobId => {
-        subscribeToJob(jobId)
-      })
-    }, 100)
     
     handleFileRemoved()
     showAlert(`${successCount} of ${filePreview.value.length} URLs from file submitted successfully`, 'success')
@@ -323,8 +247,56 @@ function viewContent(jobId) {
   console.log('View content for job:', jobId)
 }
 
-onMounted(() => {
-  connectWebSocket()
+function updateJobStatus(jobId, status, data) {
+  const job = jobs.value.find(j => j.jobId === jobId)
+  if (job) {
+    console.log(`Updating job ${jobId} status from ${job.status} to ${status}`)
+    job.status = status
+    job.lastUpdated = new Date().toISOString()
+    
+    // Update additional data if provided
+    if (data) {
+      if (data.title) job.title = data.title
+      if (data.completedAt) job.completedAt = data.completedAt
+      if (data.error) job.error = data.error
+    }
+  } else {
+    console.warn(`Job ${jobId} not found in jobs list for status update`)
+  }
+}
+
+onMounted(() => {  
+  $socket.on("job_added", (jobData) => {
+    console.log('📝 Job added:', jobData)
+    
+    // Add new job to the beginning of the jobs array
+    const newJob = {
+      jobId: jobData.jobId,
+      url: jobData.url,
+      status: jobData.status,
+      priority: jobData.priority,
+      createdAt: jobData.createdAt,
+      title: null,
+      completedAt: null,
+      error: null
+    }
+    
+    jobs.value.push(newJob);
+  });
+
+  $socket.on("job_updated", (jobUpdate) => {
+    console.log('🔄 Job update received:', jobUpdate)
+    updateJobStatus(jobUpdate.jobId, jobUpdate.status, jobUpdate.data)
+  });
+
+  // Check if already connected
+  if ($socket.connected) {
+    console.log('✅ Already connected to Socket.IO')
+    wsConnected.value = true
+  } else {
+    wsConnected.value = false
+  }
+
   fetchExistingJobs()
 })
 
@@ -359,9 +331,9 @@ async function fetchExistingJobs() {
       error: job.errorMessage || null
     }))
     
-    existingJobs.forEach(job => {
-      subscribeToJob(job.id)
-    })
+    // existingJobs.forEach(job => {
+    //   subscribeToJob(job.id)
+    // })
     
     console.log(`Loaded ${existingJobs.length} existing jobs`)
     
@@ -371,122 +343,21 @@ async function fetchExistingJobs() {
 }
 
 onUnmounted(() => {
-  if (ws) {
-    ws.close()
-  }
+  
 })
 
 
 // Socket
 const refreshData = async () => {
-  isRefreshing.value = true
-  try {
-    await refreshJobs()
-    
-    // Also check and reconnect WebSocket if needed
-    if (!wsConnected.value || !ws || ws.readyState !== WebSocket.OPEN) {
-      console.log('Reconnecting WebSocket during refresh...')
-      connectWebSocket()
-    }
-    
-    showAlert('Data refreshed', 'success')
-  } catch (err) {
-    console.error('Refresh failed:', err)
-    showAlert('Failed to refresh data', 'error')
-  } finally {
-    setTimeout(() => {
-      isRefreshing.value = false
-    }, 1000)
-  }
-}
-
-function connectWebSocket() {
-  try {
-    const { createConnection } = useWebSocket()
-    
-    ws = createConnection(
-      handleWebSocketMessage,
-      () => { 
-        wsConnected.value = true
-        console.log('WebSocket connection established successfully')
-      },
-      () => { 
-        wsConnected.value = false
-        console.log('WebSocket disconnected, attempting reconnection...')
-        // Attempt to reconnect after 3 seconds
-        setTimeout(connectWebSocket, 3000)
-      }
-    )
-    
-    if (!ws) {
-      console.warn('WebSocket not available (likely SSR)')
-    } else {
-      // Add additional connection state logging
-      ws.addEventListener('open', () => {
-        console.log('WebSocket state: OPEN (ready for subscriptions)')
-      })
-      
-      ws.addEventListener('error', (error) => {
-        console.error('WebSocket error event:', error)
-      })
-    }
-  } catch (error) {
-    console.error('Failed to connect WebSocket:', error)
-  }
-}
-
-// Handle WebSocket messages
-function handleWebSocketMessage(message) {
-  console.log('Received WebSocket message:', message)
-  
-  switch (message.type) {
-    case 'connected':
-      console.log('WebSocket client ID:', message.clientId)
-      break
-      
-    case 'subscribed':
-      console.log(`✅ Successfully subscribed to job: ${message.jobId}`)
-      break
-      
-    case 'unsubscribed':
-      console.log(`❌ Unsubscribed from job: ${message.jobId}`)
-      break
-      
-    case 'job-update':
-      console.log(`Job update received for ${message.jobId}: ${message.status}`)
-      updateJobStatus(message.jobId, message.status, message.data)
-      break
-      
-    default:
-      console.log('Unknown message type:', message)
-  }
-}
-
-// Subscribe to job updates
-function subscribeToJob(jobId, retryCount = 0) {
-  const maxRetries = 3
-  
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    console.log(`Subscribing to job: ${jobId}`)
-    ws.send(JSON.stringify({
-      type: 'subscribe-job',
-      jobId
-    }))
-  } else {
-    console.warn(`Cannot subscribe to job ${jobId}: WebSocket not ready (state: ${ws?.readyState})`)
-    
-    // Retry subscription if we haven't exceeded max retries
-    if (retryCount < maxRetries) {
-      const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 5000) // Exponential backoff, max 5s
-      console.log(`Retrying subscription to job ${jobId} in ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries})`)
-      
-      setTimeout(() => {
-        subscribeToJob(jobId, retryCount + 1)
-      }, retryDelay)
-    } else {
-      console.error(`Failed to subscribe to job ${jobId} after ${maxRetries} attempts`)
-    }
-  }
+  // Test socket connection
+  // if ($socket.connected) {
+  //   console.log('✅ Socket.IO is connected')
+  //   showAlert('Socket connection is active', 'success')
+  // } else {
+  //   console.log('❌ Socket.IO is not connected, attempting to reconnect...')
+  //   $socket.connect()
+  //   showAlert('Attempting to reconnect...', 'info')
+  // }
 }
 </script>
 

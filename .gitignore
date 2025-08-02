@@ -19,7 +19,7 @@ apps/analytics/node_modules
 apps/queue/node_modules
 apps/worker/node_modules
 
-# Logs
+# Logsd
 logs
 *.log
 

@@ -3,7 +3,8 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { createServer } from 'http'
-import { WebSocketServer, WebSocket } from 'ws'
+import { Server } from 'socket.io'
+import Redis from 'ioredis'
 
 // Load environment variables FIRST
 dotenv.config()
@@ -21,108 +22,48 @@ const queueService = new QueueService(sqs)
 
 const app = express()
 const server = createServer(app)
+const io = new Server(server, {cors: {origin:"*"}, path: '/ws'})
 
-// Initialize WebSocket Server
-const wss = new WebSocketServer({ 
-  server,
-  path: '/ws'
-})
-
-// Store connected clients with their subscriptions
-interface WSClient {
-  ws: WebSocket;
-  id: string;
-  subscribedJobs: Set<string>;
-}
-
-const clients = new Map<string, WSClient>();
-
-// WebSocket connection handling
-wss.on('connection', (ws: WebSocket) => {
-  const clientId = uuidv4();
-  const client: WSClient = {
-    ws,
-    id: clientId,
-    subscribedJobs: new Set()
-  };
-  
-  clients.set(clientId, client);
-  logger.info(`WebSocket client connected: ${clientId}`);
-  
-  // Send welcome message
-  ws.send(JSON.stringify({
-    type: 'connected',
-    clientId,
-    timestamp: new Date().toISOString()
-  }));
-  
-  ws.on('message', (data: Buffer) => {
-    try {
-      const message = JSON.parse(data.toString());
-      
-      switch (message.type) {
-        case 'subscribe-job':
-           console.log(message, 'mes')
-          if (message.jobId) {
-            client.subscribedJobs.add(message.jobId);
-            logger.info(`Client ${clientId} subscribed to job ${message.jobId}`);
-            ws.send(JSON.stringify({
-              type: 'subscribed',
-              jobId: message.jobId,
-              timestamp: new Date().toISOString()
-            }));
-          }
-          break;
-          
-        case 'unsubscribe-job':
-          if (message.jobId) {
-            client.subscribedJobs.delete(message.jobId);
-            logger.info(`Client ${clientId} unsubscribed from job ${message.jobId}`);
-            ws.send(JSON.stringify({
-              type: 'unsubscribed',
-              jobId: message.jobId,
-              timestamp: new Date().toISOString()
-            }));
-          }
-          break;
-          
-        case 'job-status-update':
-          // Handle status updates from workers
-          if (message.jobId && message.status) {
-            logger.info(`Received job status update from worker: ${message.jobId} -> ${message.status}`);
-            // Broadcast this update to subscribed clients
-            broadcastJobUpdate(message.jobId, message.status, message.data);
-          }
-          break;
-          
-        case 'ping':
-          ws.send(JSON.stringify({
-            type: 'pong',
-            timestamp: new Date().toISOString()
-          }));
-          break;
-      }
-    } catch (error: any) {
-      logger.error('Error parsing WebSocket message', error);
-    }
-  });
-  
-  ws.on('close', () => {
-    clients.delete(clientId);
-    logger.info(`WebSocket client disconnected: ${clientId}`);
-  });
-  
-  ws.on('error', (error: any) => {
-    logger.error(`WebSocket error for client ${clientId}:`, error);
-    clients.delete(clientId);
-  });
-});
+// Export io instance for use in other modules
+export { io };
 
 app.use(cors())
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+
+const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379"); // Pub/Sub
+redis.subscribe("job_updates");
+redis.on("message", (channel, message) => {
+  logger.info(`Received Redis message on channel: ${channel}`)
+  if (channel === "job_updates") {
+    const job = JSON.parse(message);
+    
+    // Transform the job data to match the expected format
+    const jobUpdate = {
+      type: 'job-update',
+      jobId: job.id || job.jobId,
+      status: job.status,
+      data: {
+        url: job.url,
+        priority: job.priority,
+        completedAt: job.completedAt,
+        title: job.title
+      },
+      timestamp: new Date().toISOString()
+    };
+    
+    io.emit("job_updated", jobUpdate);
+    logger.info(`Broadcasted job update via Redis for ${jobUpdate.jobId}: ${jobUpdate.status}`);
+  }
+});
+
 app.use('/api', apiRoutes);
+
+io.on("connection", (socket) => {
+  logger.info(`Client connected: ${socket.id}`)
+  socket.on("disconnect", () =>  logger.info(`Client disconnected: ${socket.id}`) )
+})
 
 const PORT = process.env.PORT || 3001
 server.listen(PORT, () => {
@@ -130,46 +71,17 @@ server.listen(PORT, () => {
   logger.info(`WebSocket server running on ws://localhost:${PORT}/ws`);
 })
 
-// Function to broadcast job status updates
-export function broadcastJobUpdate(jobId: string, status: string, data?: any) {
-  const message = JSON.stringify({
-    type: 'job-update',
-    jobId,
-    status,
-    data,
-    timestamp: new Date().toISOString()
-  });
-  
-  // Broadcast to all clients subscribed to this job
-  for (const client of clients.values()) {
-    if (client.subscribedJobs.has(jobId) && client.ws.readyState === WebSocket.OPEN) {
-      try {
-        client.ws.send(message);
-      } catch (error:any) {
-        logger.error(`Error sending message to client ${client.id}:`, error);
-      }
-    }
-  }
-  
-  logger.info(`Broadcasted job update for ${jobId}: ${status}`);
-}
-
-// Function to broadcast to all connected clients
-// export function broadcastToAll(message: any) {
-//   const messageStr = JSON.stringify({
-//     ...message,
+// Function to broadcast job status updates via Socket.IO
+// export function broadcastJobUpdate(jobId: string, status: string, data?: any) {
+//   const message = {
+//     type: 'job-update',
+//     jobId,
+//     status,
+//     data,
 //     timestamp: new Date().toISOString()
-//   });
+//   };
   
-//   for (const client of clients.values()) {
-//     if (client.ws.readyState === WebSocket.OPEN) {
-//       try {
-//         client.ws.send(messageStr);
-//       } catch (error) {
-//         logger.error(`Error sending broadcast to client ${client.id}:`, error);
-//       }
-//     }
-//   }
+//   // Emit job_updated event to all connected Socket.IO clients
+//   io.emit('job_updated', message);
+//   logger.info(`Broadcasted job update for ${jobId}: ${status}`);
 // }
-
-export { wss, clients };

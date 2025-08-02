@@ -5,7 +5,7 @@ import * as dynamodb from '@iakhator/scraper-aws-wrapper';
 import * as sqs from '@iakhator/scraper-aws-wrapper';
 import { createScraperLogger } from '@iakhator/scraper-logger';
 import { ScrapeJob } from '@iakhator/scraper-types';
-import { broadcastJobUpdate } from '../index';
+import { io, broadcastJobUpdate } from '../index';
 
 const logger = createScraperLogger({ service: 'queue-api' });
 // import { io } from '../server';
@@ -45,10 +45,13 @@ router.post('/urls', async (req, res) => {
       maxRetries: 3,
     });
 
-    // Broadcast job submission via WebSocket
-    broadcastJobUpdate(jobId, 'queued', {
+    // Emit job_added event ONLY when job is first created with 'queued' status
+    io.emit('job_added', {
+      jobId,
       url: value.url,
-      priority: value.priority
+      priority: value.priority,
+      status: 'queued',
+      createdAt: job.createdAt
     });
 
     res.status(201).json({ jobId, status: 'queued' });
@@ -92,10 +95,13 @@ router.post('/urls/bulk', async (req, res) => {
         maxRetries: 3,
       });
 
-      // Broadcast job submission via WebSocket
-      broadcastJobUpdate(jobId, 'queued', {
+      // Emit job_added event for each job created
+      io.emit('job_added', {
+        jobId,
         url,
-        priority: value.priority
+        priority: value.priority,
+        status: 'queued',
+        createdAt: job.createdAt
       });
 
       jobIds.push(jobId);

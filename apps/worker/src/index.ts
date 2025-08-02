@@ -4,6 +4,7 @@ import { logger } from '@iakhator/scraper-logger';
 import { QueueService, DatabaseService, ScraperService } from '@iakhator/scraper-core';
 import * as sqs from '@iakhator/scraper-aws-wrapper';
 import * as dynamodb from '@iakhator/scraper-aws-wrapper';
+import Redis from 'ioredis'
 import { WebSocketClient } from './websocketClient';
 
 // dependencies Factory
@@ -14,15 +15,17 @@ function createWorker(): Worker {
   
   const queueServiceUrl = process.env.WS_URL || 'ws://queue:3001';
   const wsUrl = queueServiceUrl + '/ws'
+  const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
   
-  logger.info(`Creating WebSocket client with URL: ${wsUrl}`);
-  const wsClient = new WebSocketClient(wsUrl);
+  // logger.info(`Creating WebSocket client with URL: ${wsUrl}`);
+  // const wsClient = new WebSocketClient(wsUrl);
   
   return new Worker({
     queueService,
     databaseService,
     scraperService,
-    wsClient
+    redis
+    // wsClient
   });
 }
 
