@@ -58,37 +58,6 @@ export class Worker {
           logger.error(`Worker error: ${error.message}`, error);
           await this.sleep(5000); // Wait before retrying
         }
-        // try {
-        //   logger.debug('Polling SQS queue for messages...');
-        //   const startTime = Date.now();
-          
-        //   // Configure SQS polling parameters
-        //   const messages = await this.queueService.receiveMessages({
-        //     MaxNumberOfMessages: 10,
-        //     WaitTimeSeconds: 20,  
-        //     VisibilityTimeout: 300   
-        //   });
-          
-        //   const pollDuration = Date.now() - startTime;
-          
-        //   if (messages.length === 0) {
-        //     logger.info(`No messages in queue after ${pollDuration}ms polling. Next poll in ${this.pollingInterval/1000}s`);
-        //     await this.sleep(this.pollingInterval);
-        //     continue;
-        //   }
-
-        //   logger.info(`Found ${messages.length} messages after ${pollDuration}ms polling`);
-          
-        //   // Process messages sequentially to avoid overwhelming the scraper
-          // for (const message of messages) {
-          //   if (!this.isRunning) break; // Stop if worker is shutting down
-          //   await this.processMessage(message);
-          // }
-          
-        // } catch (error: any) {
-        //   logger.error(`Worker polling error: ${error.message}`, error);
-        //   await this.sleep(this.errorRetryInterval);
-        // }
       }
     } catch (error: any) {
       logger.error(`Worker startup failed: ${error.message}`, error);
@@ -178,7 +147,8 @@ export class Worker {
       };
 
     try {
-      if (receiveCount >= this.maxRetries) {
+      let redisJob: QueueMessage & { status: string};
+      if (receiveCount < this.maxRetries) {
         updates.completedAt = new Date().toISOString();
         // Let SQS move the message to the DLQ automatically after maxReceiveCount
         //   this.wsClient?.sendJobUpdate(job.jobId, 'sendtodlq', {
@@ -188,17 +158,12 @@ export class Worker {
         //   retryAt: new Date().toISOString()
         // });
         logger.error(`Job moved to DLQ after ${receiveCount} attempts: ${job.jobId}`);
-        // Optionally, send to DLQ manually as a fallback (not required with proper redrive policy)
-        // await this.queueService.sendToDLQ(job, receiveCount);
       } else {
         logger.info(`Job ${job.jobId} failed (attempt ${receiveCount}), will retry`);
-        //   this.wsClient?.sendJobUpdate(job.jobId, 'failed', {
-        //   url: job.url,
-        //   error: error.message,
-        //   retryCount: receiveCount,
-        //   maxRetries: this.maxRetries,
-        //   failedAt: new Date().toISOString()
-        // });
+        redisJob = {...job, status: 'failed'}
+        this.redis?.publish('update_jobs', JSON.stringify(redisJob))
+        // Optionally, send to DLQ manually as a fallback (not required with proper redrive policy)
+        // await this.queueService.sendToDLQ(job, receiveCount);
       }
 
       await this.databaseService.updateJob(job.jobId, updates);

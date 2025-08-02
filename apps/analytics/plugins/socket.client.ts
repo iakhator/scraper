@@ -10,12 +10,11 @@ export default defineNuxtPlugin(() => {
   console.log('Creating Socket.IO connection to:', baseUrl);
   
   const socket = io(baseUrl, {
-    path: '/ws',  // This should match the server path configuration
+    path: '/ws', 
     autoConnect: true,
     transports: ['websocket', 'polling']
   });
 
-  // Add connection logging
   socket.on('connect', () => {
     console.log('Socket.IO Plugin: Connected to:', baseUrl, 'ID:', socket.id);
   });

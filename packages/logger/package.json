@@ -1,6 +1,6 @@
 {
   "name": "@iakhator/scraper-logger",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Shared logging utility for the scraper project",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

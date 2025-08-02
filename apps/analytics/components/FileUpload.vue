@@ -71,7 +71,7 @@
 </template>
 
 <script setup>
-import { ref, defineEmits } from 'vue'
+import { ref } from 'vue'
 import { Upload, FileText, X, AlertCircle } from 'lucide-vue-next'
 
 const emit = defineEmits(['file-processed', 'file-removed'])

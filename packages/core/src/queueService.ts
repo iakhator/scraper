@@ -19,9 +19,9 @@ export class QueueService {
     this.sqs = sqs;
   }
 
-  async sendMessage(message: QueueMessage): Promise<{ messageId: string }> {
+  async sendMessage(url: string, message: QueueMessage): Promise<{ messageId: string }> {
     try {
-      const result = await this.sqs.sendMessage(message);
+      const result = await this.sqs.sendMessage(url, message);
 
       logger.info(`Message sent to queue: ${message.jobId}`);
       return result

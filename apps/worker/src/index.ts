@@ -12,19 +12,13 @@ function createWorker(): Worker {
   const databaseService = new DatabaseService(dynamodb);
   const scraperService = new ScraperService();
   
-  const queueServiceUrl = process.env.WS_URL || 'ws://queue:3001';
-  const wsUrl = queueServiceUrl + '/ws'
   const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
-  
-  // logger.info(`Creating WebSocket client with URL: ${wsUrl}`);
-  // const wsClient = new WebSocketClient(wsUrl);
   
   return new Worker({
     queueService,
     databaseService,
     scraperService,
     redis
-    // wsClient
   });
 }
 
