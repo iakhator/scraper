@@ -1,4 +1,5 @@
 import { QueueService, DatabaseService, ScraperService } from '@iakhator/scraper-core';
+import { config } from '@iakhator/scraper-aws-wrapper';
 import { logger } from '@iakhator/scraper-logger';
 import { ScrapedContent, QueueMessage, Message, ScrapeJob } from '@iakhator/scraper-types';
 import Redis from 'ioredis'
@@ -19,6 +20,7 @@ export class Worker {
   private pollingInterval = 10000; // Poll every 10 seconds
   private errorRetryInterval = 30000; // Wait 30 seconds on error
   private maxRetries = 3;
+  private baseDelay = 5000;
 
   constructor(dependencies: WorkerDependencies) {
     this.queueService = dependencies.queueService;
@@ -150,28 +152,43 @@ export class Worker {
       let redisJob: QueueMessage & { status: string};
       if (receiveCount < this.maxRetries) {
         updates.completedAt = new Date().toISOString();
-        // Let SQS move the message to the DLQ automatically after maxReceiveCount
-        //   this.wsClient?.sendJobUpdate(job.jobId, 'sendtodlq', {
-        //   url: job.url,
-        //   retryCount: receiveCount,
-        //   error: error.message,
-        //   retryAt: new Date().toISOString()
-        // });
+        const delay = this.baseDelay * Math.pow(2, receiveCount);
+        logger.info(`Retrying job ${job.jobId} in ${delay}ms (attempt ${receiveCount + 1})`);
+        redisJob = {...job, status: 'queued' }
+        setTimeout(() => {
+          this.sendBackMessageToQueue(job, receiveCount + 1)
+        }, delay);
+        this.redis?.publish('job_updates', JSON.stringify(redisJob))
+        
         logger.error(`Job moved to DLQ after ${receiveCount} attempts: ${job.jobId}`);
       } else {
         logger.info(`Job ${job.jobId} failed (attempt ${receiveCount}), will retry`);
         redisJob = {...job, status: 'failed'}
-        this.redis?.publish('update_jobs', JSON.stringify(redisJob))
+        this.redis?.publish('job_updates', JSON.stringify(redisJob))
         // Optionally, send to DLQ manually as a fallback (not required with proper redrive policy)
-        // await this.queueService.sendToDLQ(job, receiveCount);
+        await this.queueService.sendMessage(config.dlqUrl as string, {
+          jobId: job.jobId,
+          url: job.url,
+          priority: job.priority,
+          retryCount: receiveCount,
+        });
       }
 
-      await this.databaseService.updateJob(job.jobId, updates);
+      // await this.databaseService.updateJob(job.jobId, updates);
       // Do NOT delete the message on failure to allow SQS to retry
     } catch (retryError: any) {
       const errorMessage = `Failed to handle failed job ${job.jobId}: ${retryError.message}`;
       logger.error(errorMessage, retryError);
     }
+  }
+
+  private async sendBackMessageToQueue(job: QueueMessage, receiveCount: number) { 
+     await this.queueService.sendMessage(config.queueUrl as string, {
+      jobId: job.jobId,
+      url: job.url,
+      priority: job.priority,
+      retryCount: receiveCount,
+    });
   }
 
   private sleep(ms: number): Promise<void> {

@@ -4,6 +4,7 @@ import { QueueService, DatabaseService, urlSchema, bulkUrlSchema } from '@iakhat
 import * as dynamodb from '@iakhator/scraper-aws-wrapper';
 import * as sqs from '@iakhator/scraper-aws-wrapper';
 import { createScraperLogger } from '@iakhator/scraper-logger';
+import {config} from '@iakhator/scraper-aws-wrapper';
 import { ScrapeJob } from '@iakhator/scraper-types';
 import { io } from '../index';
 
@@ -35,7 +36,7 @@ router.post('/urls', async (req, res) => {
     };
 
     await databaseService.saveJob(job);
-    await queueService.sendMessage({
+    await queueService.sendMessage(sqs.config.queueUrl as string, {
       jobId,
       url: value.url,
       priority: value.priority,
@@ -93,7 +94,7 @@ router.post('/urls/bulk', async (req, res) => {
       });
 
       await databaseService.saveJob(job);
-      await queueService.sendMessage({
+      await queueService.sendMessage(sqs.config.queueUrl as string, {
         jobId,
         url,
         priority: value.priority,
