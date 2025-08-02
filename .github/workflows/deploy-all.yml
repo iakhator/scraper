@@ -1,7 +1,7 @@
 name: Deploy All Apps
 
 on:
-  push:
+  pull_request:
     branches: [ main ]
     paths-ignore:
       - '**.md'

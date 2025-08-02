@@ -1,7 +1,7 @@
 name: Worker CI
 
 on:
-  push:
+  pull_request:
     branches: [ main ]
     paths:
       - 'apps/worker/**'
