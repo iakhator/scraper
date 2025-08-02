@@ -1,6 +1,6 @@
 {
   "name": "@iakhator/scraper-core",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Core business services for the scraper project - Database, Queue, and Scraper services",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,10 +22,12 @@
     "@iakhator/scraper-aws-wrapper": "^1.0.8",
     "@iakhator/scraper-logger": "^1.0.8",
     "@iakhator/scraper-types": "^1.0.8",
+    "@mozilla/readability": "^0.6.0",
     "axios": "^1.7.7",
     "cheerio": "^1.0.0",
     "dotenv": "^17.2.0",
     "joi": "^17.13.3",
+    "jsdom": "^26.1.0",
     "puppeteer-cluster": "^0.23.0"
   },
   "devDependencies": {

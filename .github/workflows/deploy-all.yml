@@ -28,6 +28,8 @@ jobs:
             - 'apps/analytics/**'
           queue:
             - 'apps/queue/**'
+          worker:
+            - 'apps/worker/**'
 
   deploy-analytics:
     needs: detect-changes
