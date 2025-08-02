@@ -70,18 +70,3 @@ server.listen(PORT, () => {
   logger.startup(PORT);
   logger.info(`WebSocket server running on ws://localhost:${PORT}/ws`);
 })
-
-// Function to broadcast job status updates via Socket.IO
-// export function broadcastJobUpdate(jobId: string, status: string, data?: any) {
-//   const message = {
-//     type: 'job-update',
-//     jobId,
-//     status,
-//     data,
-//     timestamp: new Date().toISOString()
-//   };
-  
-//   // Emit job_updated event to all connected Socket.IO clients
-//   io.emit('job_updated', message);
-//   logger.info(`Broadcasted job update for ${jobId}: ${status}`);
-// }

@@ -5,7 +5,6 @@ import { QueueService, DatabaseService, ScraperService } from '@iakhator/scraper
 import * as sqs from '@iakhator/scraper-aws-wrapper';
 import * as dynamodb from '@iakhator/scraper-aws-wrapper';
 import Redis from 'ioredis'
-import { WebSocketClient } from './websocketClient';
 
 // dependencies Factory
 function createWorker(): Worker {

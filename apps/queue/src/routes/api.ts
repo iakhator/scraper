@@ -5,11 +5,9 @@ import * as dynamodb from '@iakhator/scraper-aws-wrapper';
 import * as sqs from '@iakhator/scraper-aws-wrapper';
 import { createScraperLogger } from '@iakhator/scraper-logger';
 import { ScrapeJob } from '@iakhator/scraper-types';
-import { io, broadcastJobUpdate } from '../index';
+import { io } from '../index';
 
 const logger = createScraperLogger({ service: 'queue-api' });
-// import { io } from '../server';
-// import { sqsClient, dynamodb } from '../config/aws';
 
 const router = Router();
 const queueService = new QueueService(sqs);
@@ -85,6 +83,14 @@ router.post('/urls/bulk', async (req, res) => {
         retryCount: 0,
         maxRetries: 3,
       };
+      // Emit job_added event for each job created
+      io.emit('job_added', {
+        jobId,
+        url,
+        priority: value.priority,
+        status: 'queued',
+        createdAt: job.createdAt
+      });
 
       await databaseService.saveJob(job);
       await queueService.sendMessage({
@@ -95,14 +101,6 @@ router.post('/urls/bulk', async (req, res) => {
         maxRetries: 3,
       });
 
-      // Emit job_added event for each job created
-      io.emit('job_added', {
-        jobId,
-        url,
-        priority: value.priority,
-        status: 'queued',
-        createdAt: job.createdAt
-      });
 
       jobIds.push(jobId);
     }

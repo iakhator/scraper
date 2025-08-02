@@ -7,6 +7,8 @@ export default defineNuxtPlugin(() => {
   // Extract the base URL (remove /ws path if present) and let Socket.IO use the path option
   const baseUrl = socketUrl.replace('/ws', '');
   
+  console.log('Creating Socket.IO connection to:', baseUrl);
+  
   const socket = io(baseUrl, {
     path: '/ws',  // This should match the server path configuration
     autoConnect: true,
@@ -15,15 +17,15 @@ export default defineNuxtPlugin(() => {
 
   // Add connection logging
   socket.on('connect', () => {
-    console.log('Socket.IO connected to:', baseUrl);
+    console.log('Socket.IO Plugin: Connected to:', baseUrl, 'ID:', socket.id);
   });
 
   socket.on('disconnect', (reason) => {
-    console.log('Socket.IO disconnected:', reason);
+    console.log('Socket.IO Plugin: Disconnected:', reason);
   });
 
   socket.on('connect_error', (error) => {
-    console.error('Socket.IO connection error:', error);
+    console.error('Socket.IO Plugin: Connection error:', error);
   });
 
   return {

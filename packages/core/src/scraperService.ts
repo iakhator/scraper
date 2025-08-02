@@ -5,6 +5,8 @@ import { config } from '@iakhator/scraper-aws-wrapper';
 import { ScrapedContent } from '@iakhator/scraper-types';
 import { logger } from '@iakhator/scraper-logger';
 import { urlSchema } from './validators';
+import { JSDOM } from 'jsdom';
+import { Readability } from '@mozilla/readability';
 
 export class ScraperService {
   private cluster: Cluster | null = null;
@@ -93,28 +95,28 @@ export class ScraperService {
     }
   }
 
-  private async scrapeStatic(url: string): Promise<Partial<ScrapedContent>> {
+  private async scrapeStatic(url: string): Promise<Partial<{contentHtml: string} & ScrapedContent>> {
     try {
       const response = await axios.get(url, {
         timeout: 10000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        },
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
       });
 
-      const $ = cheerio.load(response.data);
+      const dom = new JSDOM(response.data, { url });
+      const reader = new Readability(dom.window.document);
+      const article = reader.parse();
+
+      if (!article) throw new Error('Failed to extract readable content');
 
       return {
-        title: $('title').text().trim() || $('h1').first().text().trim(),
-        content: $('body').text().replace(/\s+/g, ' ').trim(),
+        title: article.title || dom.window.document.querySelector('title')?.textContent || '',
+        content: article.textContent?.trim() || '',
+        contentHtml: article.content || '',
         metadata: {
-          description: $('meta[name="description"]').attr('content'),
-          keywords: $('meta[name="keywords"]')
-            .attr('content')
-            ?.split(',')
-            .map((k) => k.trim()),
-          author: $('meta[name="author"]').attr('content'),
-          publishDate: $('meta[property="article:published_time"]').attr('content'),
+          description: dom.window.document.querySelector('meta[name="description"]')?.getAttribute('content') || '',
+          keywords: dom.window.document.querySelector('meta[name="keywords"]')?.getAttribute('content')?.split(',').map((k: string) => k.trim()),
+          author: dom.window.document.querySelector('meta[name="author"]')?.getAttribute('content') || '',
+          publishDate: dom.window.document.querySelector('meta[property="article:published_time"]')?.getAttribute('content') || '',
         },
       };
     } catch (error: any) {
@@ -131,35 +133,48 @@ export class ScraperService {
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
       try {
-        await page.goto(url, { waitUntil: 'networkidle2', timeout: config.pageTimeout});
+        await page.goto(url, { waitUntil: 'networkidle2', timeout: config.pageTimeout });
 
-        const result = await page.evaluate(() => {
-          document.querySelectorAll('header, footer, nav, .sidebar, .subscribe, .comments, iframe, script, style').forEach(el => el.remove());
-
-          const getMetaContent = (selector: string) => {
-            const element = document.querySelector(selector);
-            return element ? element.getAttribute('content') : undefined;
-          };
-
-          return {
-            title: document.title || document.querySelector('h1')?.textContent?.trim(),
-            content: document.body.innerText.replace(/\s+/g, ' ').trim(),
-            metadata: {
-              description: getMetaContent('meta[name="description"]'),
-              keywords: getMetaContent('meta[name="keywords"]')?.split(',').map((k: string) => k.trim()),
-              author: getMetaContent('meta[name="author"]'),
-              publishDate: getMetaContent('meta[property="article:published_time"]'),
-            },
-          };
+        const html = await page.evaluate(() => {
+          // Remove junk
+          document.querySelectorAll('header, footer, nav, .sidebar, .subscribe, .comments, .advertisement, iframe, script, style').forEach(el => el.remove());
+          return new XMLSerializer().serializeToString(document);
         });
 
-        return result;
-      } catch (error:any) {
+        // Use Readability on cleaned DOM
+        const dom = new JSDOM(html, { url });
+        const reader = new Readability(dom.window.document);
+        const article = reader.parse();
+
+        if (!article) {
+          // Fallback: just grab text from article containers
+          const fallbackText = await page.$eval('article, .entry-content, .post-content, .content', (el: { innerText: any; }) => el.innerText);
+          return {
+            title: await page.title(),
+            content: fallbackText,
+            contentHtml: fallbackText,
+            metadata: {},
+          };
+        }
+
+        return {
+          title: article.title || await page.title(),
+          content: article.textContent?.trim() || '',
+          contentHtml: article.content || '',
+          metadata: {
+            description: dom.window.document.querySelector('meta[name="description"]')?.getAttribute('content') || '',
+            keywords: dom.window.document.querySelector('meta[name="keywords"]')?.getAttribute('content')?.split(',').map((k: string) => k.trim()),
+            author: dom.window.document.querySelector('meta[name="author"]')?.getAttribute('content') || '',
+            publishDate: dom.window.document.querySelector('meta[property="article:published_time"]')?.getAttribute('content') || '',
+          },
+        };
+      } catch (error: any) {
         if (error.name === 'TimeoutError') {
           logger.warn(`Timeout while loading ${url}, falling back to partial content`);
           const partialResult = await page.evaluate(() => ({
             title: document.title || '',
             content: document.body.innerText.replace(/\s+/g, ' ').trim(),
+            contentHtml: document.body.innerHTML,
             metadata: {},
           }));
           return partialResult;

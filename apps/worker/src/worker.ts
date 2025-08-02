@@ -1,14 +1,12 @@
 import { QueueService, DatabaseService, ScraperService } from '@iakhator/scraper-core';
 import { logger } from '@iakhator/scraper-logger';
 import { ScrapedContent, QueueMessage, Message, ScrapeJob } from '@iakhator/scraper-types';
-import { WebSocketClient } from './websocketClient';
 import Redis from 'ioredis'
 
 interface WorkerDependencies {
   queueService: QueueService;
   databaseService: DatabaseService;
   scraperService: ScraperService;
-  // wsClient?: WebSocketClient;
   redis: Redis
 }
 
@@ -16,7 +14,6 @@ export class Worker {
   private queueService: QueueService;
   private databaseService: DatabaseService;
   private scraperService: ScraperService;
-  private wsClient?: WebSocketClient;
   private redis?: Redis;
   private isRunning = false;
   private pollingInterval = 10000; // Poll every 10 seconds
@@ -102,7 +99,6 @@ export class Worker {
   async stop(): Promise<void> {
     this.isRunning = false;
     await this.scraperService.close();
-    this.wsClient?.disconnect();
     logger.info('Scraper Worker stopped');
   }
 
@@ -185,24 +181,24 @@ export class Worker {
       if (receiveCount >= this.maxRetries) {
         updates.completedAt = new Date().toISOString();
         // Let SQS move the message to the DLQ automatically after maxReceiveCount
-          this.wsClient?.sendJobUpdate(job.jobId, 'sendtodlq', {
-          url: job.url,
-          retryCount: receiveCount,
-          error: error.message,
-          retryAt: new Date().toISOString()
-        });
+        //   this.wsClient?.sendJobUpdate(job.jobId, 'sendtodlq', {
+        //   url: job.url,
+        //   retryCount: receiveCount,
+        //   error: error.message,
+        //   retryAt: new Date().toISOString()
+        // });
         logger.error(`Job moved to DLQ after ${receiveCount} attempts: ${job.jobId}`);
         // Optionally, send to DLQ manually as a fallback (not required with proper redrive policy)
         // await this.queueService.sendToDLQ(job, receiveCount);
       } else {
         logger.info(`Job ${job.jobId} failed (attempt ${receiveCount}), will retry`);
-          this.wsClient?.sendJobUpdate(job.jobId, 'failed', {
-          url: job.url,
-          error: error.message,
-          retryCount: receiveCount,
-          maxRetries: this.maxRetries,
-          failedAt: new Date().toISOString()
-        });
+        //   this.wsClient?.sendJobUpdate(job.jobId, 'failed', {
+        //   url: job.url,
+        //   error: error.message,
+        //   retryCount: receiveCount,
+        //   maxRetries: this.maxRetries,
+        //   failedAt: new Date().toISOString()
+        // });
       }
 
       await this.databaseService.updateJob(job.jobId, updates);

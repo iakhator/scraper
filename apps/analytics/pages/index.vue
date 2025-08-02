@@ -16,7 +16,7 @@ const isSubmitting = ref(false)
 const jobs = ref([])
 const wsConnected = ref(false)
 const isRefreshing = ref(false)
-const submissionMode = ref('single')
+const submissionMode = ref('bulk')
 
 // File upload states
 const selectedFile = ref(null)
@@ -118,53 +118,49 @@ async function submitUrl() {
       if (!bulkUrls.value.trim()) return
       
       const urls = bulkUrls.value.split('\n').filter(url => url.trim())
-      // const data = {
-      //   urls,
-      //   priority: priority.value
-      // }
+      const data = {
+        urls,
+        priority: priority.value
+      }
 
-      // try {
-      //   const result = await api.post('/api/urls/bulk', data)
-      //   console.log(result, 'result');
-        
-      //   // Add jobs to the table
-      //   for (const url of urls) {
-      //     const newJob = {
-      //       jobId: result.jobId,
-      //       url: url.trim(),
-      //       status: result.status,
-      //       priority: priority.value,
-      //       createdAt: new Date().toISOString(),
-      //       title: null,
-      //       completedAt: null
-      //     }
-          
-      //     jobs.value.unshift(newJob)
-      //     subscribeToJob(result.jobId)
+      const result = await api.post('/api/urls/bulk', data)
+      console.log(result, 'result');
+      
+      // Add jobs to the table
+      // for (const url of urls) {
+      //   const newJob = {
+      //     jobId: result.jobId,
+      //     url: url.trim(),
+      //     status: result.status,
+      //     priority: priority.value,
+      //     createdAt: new Date().toISOString(),
+      //     title: null,
+      //     completedAt: null
       //   }
         
-      //   bulkUrls.value = ''
-      //   showAlert(`${urls.length} URLs submitted successfully`, 'success')
-      // } catch (error) {
-      //   console.log(error)
+        // jobs.value.unshift(newJob)
+        // subscribeToJob(result.jobId)
       // }
-      let successCount = 0
-      
-      for (const url of urls) {
-        try {
-          await api.post('/api/urls', {
-            url: url.trim(),
-            priority: priority.value
-          })
-          
-          successCount++
-        } catch (error) {
-          console.error(`Failed to submit ${url}:`, error)
-        }
-      }
-      
+        
       bulkUrls.value = ''
-      showAlert(`${successCount} of ${urls.length} URLs submitted successfully`, 'success')
+      showAlert(`${urls.length} URLs submitted successfully`, 'success')
+    //   let successCount = 0
+      
+    //   for (const url of urls) {
+    //     try {
+    //       await api.post('/api/urls', {
+    //         url: url.trim(),
+    //         priority: priority.value
+    //       })
+          
+    //       successCount++
+    //     } catch (error) {
+    //       console.error(`Failed to submit ${url}:`, error)
+    //     }
+    //   }
+      
+    //   bulkUrls.value = ''
+    //   showAlert(`${successCount} of ${urls.length} URLs submitted successfully`, 'success')
     }
     
   } catch (error) {
@@ -265,7 +261,22 @@ function updateJobStatus(jobId, status, data) {
   }
 }
 
-onMounted(() => {  
+onMounted(() => {
+  $socket.on('connect', () => {
+    console.log('✅ Socket.IO connected to:', $socket.id)
+    wsConnected.value = true
+  })
+
+  $socket.on('disconnect', (reason) => {
+    console.log('Socket.IO disconnected:', reason)
+    wsConnected.value = false
+  })
+
+  $socket.on('connect_error', (error) => {
+    console.error('Socket.IO connection error:', error)
+    wsConnected.value = false
+  })
+  
   $socket.on("job_added", (jobData) => {
     console.log('📝 Job added:', jobData)
     
@@ -281,7 +292,7 @@ onMounted(() => {
       error: null
     }
     
-    jobs.value.push(newJob);
+    jobs.value.unshift(newJob);
   });
 
   $socket.on("job_updated", (jobUpdate) => {
@@ -300,13 +311,20 @@ onMounted(() => {
   fetchExistingJobs()
 })
 
+onUnmounted(() => {
+   // Clean up Socket.IO event listeners
+  $socket.off("job_added");
+  $socket.off("job_updated");
+  $socket.off("connect");
+  $socket.off("disconnect");
+  $socket.off("connect_error");
+})
+
 async function fetchExistingJobs() {
   try {
     const { api } = useApi()
     const response = await api.get('/api/jobs')
 
-    console.log(response, 'response')
-    
     if (!response.data) {
       console.error('Failed to fetch jobs:', response)
       return
@@ -341,10 +359,6 @@ async function fetchExistingJobs() {
     console.error('Error fetching existing jobs:', error)
   }
 }
-
-onUnmounted(() => {
-  
-})
 
 
 // Socket
