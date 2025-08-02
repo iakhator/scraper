@@ -7,7 +7,7 @@ import { logger } from '@iakhator/scraper-logger';
 type ReceiveMessageParams = Omit<ReceiveMessageCommandInput, 'QueueUrl'>;
 
 interface ISQSOperations{
-  sendMessage: (message: QueueMessage) => Promise<{ messageId: string }>,
+  sendMessage: (url: string, message: QueueMessage) => Promise<{ messageId: string }>,
   receiveMessages: (params?: ReceiveMessageParams) => Promise<{ messages: Message[] }>,
   deleteMessage: (receiptHandle: DeleteMessageCommandInput) => Promise<void>
 }
