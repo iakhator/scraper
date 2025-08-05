@@ -18,7 +18,6 @@ export class Worker {
   private redis?: Redis;
   private isRunning = false;
   private pollingInterval = 10000; // Poll every 10 seconds
-  private errorRetryInterval = 30000; // Wait 30 seconds on error
   private maxRetries = 3;
   private baseDelay = 5000;
 
