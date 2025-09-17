@@ -9,6 +9,8 @@ backend/.env
 backend/.env.*
 backend/node_modules
 
+dist/
+
 
 # Logsd
 logs
