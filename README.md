@@ -1,13 +1,13 @@
 # 🕷️ Async Web Scraper
 
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat&logo=node.js&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.8+-3178C6?style=flat&logo=typescript&logoColor=white)
-![Nuxt.js](https://img.shields.io/badge/Nuxt.js-3+-00DC82?style=flat&logo=nuxtdotjs&logoColor=white)
+![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
+![Nuxtjs](https://img.shields.io/badge/Nuxt-002E3B?style=for-the-badge&logo=nuxtdotjs&logoColor=#00DC82)
 ![Redis](https://img.shields.io/badge/Redis-Pub%2FSub-DC382D?style=flat&logo=redis&logoColor=white)
 ![AWS SQS](https://img.shields.io/badge/AWS-SQS-FF9900?style=flat&logo=amazonaws&logoColor=white)
 ![DynamoDB](https://img.shields.io/badge/AWS-DynamoDB-FF9900?style=flat&logo=amazondynamodb&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=flat&logo=docker&logoColor=white)
-![Socket.IO](https://img.shields.io/badge/Socket.IO-Real--time-010101?style=flat&logo=socketdotio&logoColor=white)
+![Socket.io](https://img.shields.io/badge/Socket.io-black?style=for-the-badge&logo=socket.io&badgeColor=010101)
 
 A distributed web scraping system built with Node.js and TypeScript. The system processes scraping jobs asynchronously using a modular architecture with separate services for job queuing, processing, and monitoring. Designed for scalability and production use with comprehensive error handling and real-time updates.
 
@@ -29,28 +29,28 @@ A distributed web scraping system built with Node.js and TypeScript. The system 
 The system follows a microservices architecture with Redis pub/sub for real-time communication:
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Analytics     │    │   Queue API     │    │   Worker        │
-│   Dashboard     │◄──►│   Service       │    │   Service       │
-│   (Port 3000)   │    │   (Port 3001)   │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         │ Socket.IO WebSocket   │ Redis Pub/Sub         │
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Real-time     │    │   Redis         │    │   AWS SQS /     │
-│   Updates       │    │   Message       │    │   LocalStack    │
-│   ws://3001/ws  │    │   Broker        │    │   Job Queue     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                 │                       │
-                                 │                       │
-                                 ▼                       ▼
-                        ┌─────────────────┐    ┌─────────────────┐
-                        │   job_updates   │    │   AWS DynamoDB  │
-                        │   Channel       │    │   / LocalStack  │
-                        │   (Redis)       │    │   Database      │
-                        └─────────────────┘    └─────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Analytics     │    │   Queue API     │    │   Redis         │    │   Worker        │
+│   Dashboard     │◄──►│   Service       │◄──►│   Message       │◄──►│   Service       │
+│   (Port 3000)   │    │   (Port 3001)   │    │   Broker        │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │                       │
+         │ Socket.IO WebSocket   │ Redis Pub/Sub         │ job_updates Channel   │ Redis Pub/Sub
+         │                       │                       │                       │
+         ▼                       ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Real-time     │    │   Job Queue     │    │   Pub/Sub       │    │   AWS SQS /     │
+│   Updates       │    │   Management    │    │   Communication │    │   LocalStack    │
+│   ws://3001/ws  │    │                 │    │                 │    │   Job Queue     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+                                 │                                             │
+                                 │                                             │
+                                 ▼                                             ▼
+                        ┌─────────────────┐                          ┌─────────────────┐
+                        │   AWS DynamoDB  │                          │   AWS DynamoDB  │
+                        │   / LocalStack  │                          │   / LocalStack  │
+                        │   Database      │                          │   Database      │
+                        └─────────────────┘                          └─────────────────┘
 ```
 
 ### Components
@@ -107,10 +107,6 @@ This architecture ensures:
 ## Features
 
 **Intelligent Scraping**: Uses a dual-strategy approach starting with fast Cheerio parsing and falling back to Puppeteer for dynamic content when needed.
-
-**Proxy Rotation**: Supports rotating through multiple proxy servers with authentication to avoid rate limiting and IP blocking.
-
-**Rate Limiting**: Configurable request throttling to respect target website limits and avoid detection.
 
 **Real-time Updates**: Redis pub/sub architecture enables instant job status updates from workers to frontend clients via Socket.IO WebSocket connections.
 
