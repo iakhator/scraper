@@ -13,8 +13,11 @@ export const useSocket = ({ onJobUpdate, onJobAdded, onConnect, onDisconnect }: 
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    // Connect to Socket.IO server
-    socketRef.current = io('http://localhost:3002', {
+    // Connect to Socket.IO server - derive WebSocket URL from API URL
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+    const wsUrl = apiUrl.replace('/api', '');
+    
+    socketRef.current = io(wsUrl, {
       path: '/ws',
       transports: ['websocket', 'polling'],
     });

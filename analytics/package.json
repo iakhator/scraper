@@ -6,7 +6,12 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "docker:dev": "docker-compose up analytics-dev",
+    "docker:prod": "docker-compose up analytics-prod",
+    "docker:build-dev": "docker build --target development -t scraper-analytics:dev .",
+    "docker:build-prod": "docker build --target production -t scraper-analytics:prod .",
+    "docker:build": "docker build -t scraper-analytics:latest ."
   },
   "dependencies": {
     "@tanstack/react-query": "^5.56.2",
