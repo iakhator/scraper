@@ -43,7 +43,7 @@ jobs:
       
     - name: Validate Analytics Docker Build
       run: |
-        docker build --target builder -f analytics/Dockerfile .
+        docker build --target build -f analytics/Dockerfile .
         
     - name: Deploy Analytics to Render
       run: |
