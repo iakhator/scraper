@@ -19,6 +19,8 @@ CMD ["npm", "run", "dev"]
 
 # Build stage
 FROM base AS builder
+ENV NODE_ENV=production
+RUN npm install
 COPY analytics ./
 RUN npm run build
 
@@ -31,7 +33,7 @@ RUN apk add --no-cache curl
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY analytics/ngnix.conf /etc/nginx/conf.d/default.conf
 
 # Add health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

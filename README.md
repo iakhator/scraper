@@ -22,6 +22,7 @@ The system consists of two main components:
 ### Components
 
 **Backend Service** (`/backend`):
+
 - REST API for job management
 - Background worker for processing scraping jobs
 - WebSocket server for real-time updates
@@ -29,6 +30,7 @@ The system consists of two main components:
 - SQS integration for job queuing
 
 **Analytics Dashboard** (`/analytics`):
+
 - React application with TypeScript
 - Real-time job monitoring via WebSocket
 - Job submission and management interface
@@ -132,10 +134,11 @@ For production deployment, configure AWS credentials and update environment vari
 ## Project Structure
 
 ```
+
 scraper/
 ├── backend/           # Node.js backend service
 ├── analytics/         # React frontend
 ├── docker-compose.yml # Production setup
 └── docker-compose.dev.yml # Development setup
-```
 
+```
