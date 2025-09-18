@@ -19,8 +19,11 @@ CMD ["npm", "run", "dev"]
 
 # Build stage
 FROM base AS build
-ENV NODE_ENV=production
+ENV NODE_ENV=development
+
+COPY analytics/package*.json ./
 RUN npm install
+
 COPY analytics ./
 RUN npm run build
 
