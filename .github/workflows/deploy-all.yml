@@ -13,8 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       analytics-changed: ${{ steps.changes.outputs.analytics }}
-      queue-changed: ${{ steps.changes.outputs.queue }}
-      worker-changed: ${{ steps.changes.outputs.worker }}
+      backend-changed: ${{ steps.changes.outputs.backend}}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
