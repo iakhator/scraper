@@ -5,7 +5,7 @@ import { JobUpdateEvent } from '../types';
 // Define socket options as a constant to avoid recreating
 const SOCKET_OPTIONS = {
   path: '/ws',
-  transports: ['websocket', 'polling'] as const,
+  transports: ['websocket', 'polling'],
 };
 
 interface UseSocketProps {
