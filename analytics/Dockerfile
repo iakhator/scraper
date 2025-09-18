@@ -18,7 +18,7 @@ EXPOSE 8000
 CMD ["npm", "run", "dev"]
 
 # Build stage
-FROM base AS builder
+FROM base AS build
 ENV NODE_ENV=production
 RUN npm install
 COPY analytics ./
@@ -30,7 +30,7 @@ FROM nginx:alpine AS production
 RUN apk add --no-cache curl
 
 #  Copy built assets from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=build /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY analytics/ngnix.conf /etc/nginx/conf.d/default.conf
