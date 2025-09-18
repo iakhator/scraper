@@ -4,18 +4,18 @@ services:
     container_name: scraper-analytics
     build:
       context: .
-      dockerfile: ./apps/analytics/Dockerfile
+      dockerfile: ./analytics/Dockerfile
       target: prod
     ports:
-      - "3000:3000"
+      - "80:80"
     environment:
       - NODE_ENV=production
 
-  queue:
-    container_name: scraper-queue
+  backend:
+    container_name: scraper-backend
     build:
       context: .
-      dockerfile: ./apps/queue/Dockerfile
+      dockerfile: ./backend/Dockerfile
       target: prod
       args:
         - REPO_TOKEN=${REPO_TOKEN}
@@ -26,19 +26,3 @@ services:
       - PORT=3001
     env_file:
       - .env
-
-  worker:
-    container_name: scraper-worker
-    build:
-      context: .
-      dockerfile: ./apps/worker/Dockerfile
-      target: prod
-      args:
-        - REPO_TOKEN=${REPO_TOKEN}
-    environment:
-      - NODE_ENV=production
-      # - WS_URL=ws://queue:3001
-    env_file:
-      - .env
-    depends_on:
-      - queue

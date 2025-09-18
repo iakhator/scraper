@@ -1,23 +1,16 @@
-# Nuxt dev/build outputs
-apps/analytics/.output
-apps/analytics/.data
-apps/analytics/.nuxt
-apps/analytics/.nitro
-apps/analytics/.cache
-apps/analytics/dist
-apps/queue/dist
-apps/worker/dist
+analytics/dist
+analytics/.env
+analytics/.env.*
+analytics/.output
+analytics/node_modules
 
-# Package build outputs
-packages/aws-wrapper/dist
-packages/logger/dist
-packages/core/dist
-packages/types/dist
+backend/dist
+backend/.env
+backend/.env.*
+backend/node_modules
 
-# Node dependencies
-apps/analytics/node_modules
-apps/queue/node_modules
-apps/worker/node_modules
+dist/
+
 
 # Logsd
 logs
@@ -31,16 +24,6 @@ logs
 # Local env files
 .env
 .env.*
-!.env.example
-apps/analytics/.env
-apps/analytics/.env.*
-!apps/analytics/.env.example
-apps/queue/.env
-apps/queue/.env.*
-!apps/queue/.env.example
-apps/worker/.env
-apps/worker/.env.*
-!apps/worker/.env.example
 
 README.md
 docs/
@@ -50,3 +33,23 @@ node_modules
 .npmrc
 volume/
 volume
+
+
+node_modules
+dist
+build
+.git
+.gitignore
+README.md
+Dockerfile
+docker-compose.yml
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+docker-compose*
+.gitHub/

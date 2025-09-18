@@ -4,66 +4,32 @@ services:
     container_name: scraper-analytics-dev
     build:
       context: .
-      dockerfile: ./apps/analytics/Dockerfile
+      dockerfile: ./analytics/Dockerfile
       target: dev
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=development
     env_file:
-      - ./apps/analytics/.env
+      - ./analytics/.env
     volumes:
-      - ./apps/analytics:/app
+      - ./analytics:/app
       - analytics_node_modules:/app/node_modules
     restart: unless-stopped
     develop:
       watch:
         - action: sync
-          path: ./apps/analytics
+          path: ./analytics
           target: /app
           ignore:
             - node_modules/
         - action: rebuild
-          path: ./apps/analytics/package.json
-
-  worker:
-    container_name: scraper-worker-dev
+          path: ./package.json
+  backend:
+    container_name: scraper-backend-dev
     build:
       context: .
-      dockerfile: ./apps/worker/Dockerfile
-      target: dev
-      args:
-        - REPO_TOKEN=${REPO_TOKEN}
-    environment:
-      - NODE_ENV=development
-      - WS_URL=${WS_URL}
-    env_file:
-      - .env
-    depends_on:
-      - queue
-      - redis
-    volumes:
-      - .:/app
-      - worker_node_modules:/app/apps/worker/node_modules
-      - ./logs:/app/logs
-    working_dir: /app/apps/worker
-    restart: unless-stopped
-    develop:
-      watch:
-        - action: sync
-          path: ./apps/worker/src
-          target: /app/apps/worker/src
-        - action: sync
-          path: ./packages
-          target: /app/packages
-        - action: rebuild
-          path: ./apps/worker/package.json
-
-  queue:
-    container_name: scraper-queue-dev
-    build:
-      context: .
-      dockerfile: ./apps/queue/Dockerfile
+      dockerfile: ./backend/Dockerfile
       target: dev
       args:
         - REPO_TOKEN=${REPO_TOKEN}
@@ -73,22 +39,22 @@ services:
       - NODE_ENV=development
       - PORT=3001
     env_file:
-      - .env
+      - ./backend/.env
     depends_on:
       - redis
     volumes:
-      - ./apps/queue:/app
-      - queue_node_modules:/app/node_modules
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
     restart: unless-stopped
     develop:
       watch:
         - action: sync
-          path: ./apps/queue/src
-          target: /app/src
+          path: ./backend
+          target: /app
           ignore:
             - node_modules/
-        - action: rebuild
-          path: ./apps/queue/package.json
+            - dist/
+            - "*.log"
   
   redis:
     container_name: scraper-redis
@@ -115,7 +81,6 @@ services:
 
 volumes:
   analytics_node_modules:
-  worker_node_modules:
-  queue_node_modules:
+  backend_node_modules:
   localstack_data:
   redis-data:

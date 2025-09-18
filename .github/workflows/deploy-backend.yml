@@ -1,0 +1,24 @@
+name: Queue CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Validate Dockerfile
+      run: docker build --target build --build-arg REPO_TOKEN=${{ secrets.REPO_TOKEN }} -f backend/Dockerfile .
