@@ -32,8 +32,10 @@ class ScraperBackend {
     this.app = express();
     this.server = createServer(this.app);
     this.io = new Server(this.server, {
-      cors: { origin: "*" },
-      path: '/ws'
+      cors: { origin: process.env.FRONTEND_URL || "http://localhost:3000" },
+      path: '/ws',
+      transports: ['websocket', 'polling'],
+      serveClient: false,
     });
 
     // Initialize services
