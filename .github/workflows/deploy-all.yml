@@ -12,8 +12,9 @@ jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
+      has-changes: ${{ steps.changes.outputs.analytics == 'true' || steps.changes.outputs.backend == 'true' }}
       analytics-changed: ${{ steps.changes.outputs.analytics }}
-      backend-changed: ${{ steps.changes.outputs.backend}}
+      backend-changed: ${{ steps.changes.outputs.backend }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -28,9 +29,9 @@ jobs:
           backend:
             - 'backend/**'
 
-  deploy-analytics:
+  deploy-all:
     needs: detect-changes
-    if: needs.detect-changes.outputs.analytics-changed == 'true'
+    if: needs.detect-changes.outputs.has-changes == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -41,29 +42,21 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Validate Analytics Docker Build
+      if: needs.detect-changes.outputs.analytics-changed == 'true'
       run: |
-        docker build --target build -f analytics/Dockerfile .
+        docker build --target builder -f analytics/Dockerfile .
         
-    - name: Deploy Analytics to Render
-      run: |
-        curl -X POST ${{ secrets.RENDER_ANALYTICS_DEPLOY_HOOK }}
-
-  deploy-backend:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.backend-changed == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: read
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Validate Queue Docker Build
+    - name: Validate Backend Docker Build
+      if: needs.detect-changes.outputs.backend-changed == 'true'
       run: |
         docker build --target build --build-arg REPO_TOKEN=${{ secrets.REPO_TOKEN }} -f backend/Dockerfile .
         
-    - name: Deploy Queue to Render
+    - name: Deploy Analytics to Render
+      if: needs.detect-changes.outputs.analytics-changed == 'true'
+      run: |
+        curl -X POST ${{ secrets.RENDER_ANALYTICS_DEPLOY_HOOK }}
+        
+    - name: Deploy Backend to Render
+      if: needs.detect-changes.outputs.backend-changed == 'true'
       run: |
         curl -X POST ${{ secrets.RENDER_QUEUE_DEPLOY_HOOK }}
