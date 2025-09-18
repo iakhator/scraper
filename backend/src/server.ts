@@ -1,4 +1,7 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+// Load environment variables first
+// dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -23,7 +26,9 @@ class ScraperBackend {
   private port: number;
 
   constructor() {
-    this.port = parseInt(process.env.PORT || '3002');
+    // Load environment variables FIRST
+    // dotenv.config()
+    this.port = parseInt(process.env.PORT || '3001');
     this.app = express();
     this.server = createServer(this.app);
     this.io = new Server(this.server, {

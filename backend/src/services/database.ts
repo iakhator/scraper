@@ -15,7 +15,7 @@ export class DatabaseService {
   private tableName: string;
 
   constructor() {
-    this.tableName = process.env.DYNAMODB_TABLE_NAME || 'scraper_db';
+    this.tableName = process.env.DYNAMODB_TABLE || 'scraper_db';
   }
 
   async putItem(item: DynamoItem): Promise<DynamoReturn<DynamoItem>> {
@@ -89,31 +89,45 @@ export class DatabaseService {
     }
   }
 
-  async queryItems(partitionKey: string, sortKeyPrefix?: string): Promise<DynamoReturn<DynamoItem[]>> {
-    let keyConditionExpression = 'PK = :pk';
-    const expressionAttributeValues: Record<string, any> = {
-      ':pk': partitionKey,
-    };
-
-    if (sortKeyPrefix) {
-      keyConditionExpression += ' AND begins_with(SK, :sk)';
-      expressionAttributeValues[':sk'] = sortKeyPrefix;
+  async queryItems(
+    options?: {
+      indexName?: string;
+      keyConditionExpression?: string;
+      filterExpression?: string;
+      expressionAttributeValues?: Record<string, any>;
+      expressionAttributeNames?: Record<string, string>;
+      limit?: number;
+      scanIndexForward?: boolean;
     }
-
+  ): Promise<DynamoReturn<DynamoItem[]>> {
     const params = {
       TableName: this.tableName,
-      KeyConditionExpression: keyConditionExpression,
-      ExpressionAttributeValues: marshall(expressionAttributeValues),
+      IndexName: options?.indexName,
+      KeyConditionExpression: options?.keyConditionExpression,
+      FilterExpression: options?.filterExpression,
+      ExpressionAttributeValues: options?.expressionAttributeValues 
+        ? marshall(options.expressionAttributeValues, { removeUndefinedValues: true })
+        : undefined,
+      ExpressionAttributeNames: options?.expressionAttributeNames,
+      Limit: options?.limit,
+      ScanIndexForward: options?.scanIndexForward,
     };
-
     try {
       const { Items } = await dynamoClient.send(new QueryCommand(params));
-      const data = Items ? Items.map((item: any) => unmarshall(item)) : [];
-      logger.debug("DynamoDB queryItems success", { tableName: this.tableName, partitionKey, count: data.length });
-      return { data };
+      const items = Items ? Items.map(item => unmarshall(item)) : [];
+      logger.debug("DynamoDB queryItems success", { 
+        tableName: this.tableName, 
+        indexName: options?.indexName,
+        itemCount: items.length 
+      });
+      return { data: items };
     } catch (error) {
       const err = error as Error;
-      logger.error("DynamoDB queryItems failed", { error: err.message, tableName: this.tableName, partitionKey });
+      logger.error("DynamoDB queryItems failed", { 
+        error: err.message, 
+        tableName: this.tableName, 
+        indexName: options?.indexName 
+      });
       return { error: err };
     }
   }

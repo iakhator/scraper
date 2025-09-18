@@ -11,7 +11,7 @@ export class QueueService {
   private queueUrl: string;
 
   constructor() {
-    this.queueUrl = process.env.QUEUE_URL || '';
+    this.queueUrl = process.env.SQS_QUEUE_URL || '';
     if (!this.queueUrl) {
       throw new Error('QUEUE_URL environment variable is required');
     }

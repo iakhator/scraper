@@ -150,7 +150,15 @@ export function createApiRoutes(
   // Get all jobs
   router.get('/jobs', async (req, res) => {
     try {
-      const { data: jobs, error } = await databaseService.queryItems('JOB#', 'METADATA');
+      const { data: jobs, error } = await databaseService.queryItems({
+          indexName: 'GSI1',
+          keyConditionExpression: 'SK = :sk',
+          expressionAttributeValues: {
+            ':sk': 'METADATA'
+          },
+          limit: 10,
+          scanIndexForward: false
+        });
       
       if (error) {
         logger.error('Failed to retrieve jobs', { error: error.message });

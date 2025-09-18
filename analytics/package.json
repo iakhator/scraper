@@ -13,6 +13,12 @@
     "docker:build-prod": "docker build --target production -t scraper-analytics:prod .",
     "docker:build": "docker build -t scraper-analytics:latest ."
   },
+  "resolutions": {
+    "rollup": "npm:@rollup/wasm-node"
+  },
+  "optionalDependencies":  {  
+    "@rollup/rollup-linux-arm64-gnu": "^4.0.0"
+  },
   "dependencies": {
     "@tanstack/react-query": "^5.56.2",
     "clsx": "^2.1.1",

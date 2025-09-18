@@ -24,7 +24,7 @@ services:
           ignore:
             - node_modules/
         - action: rebuild
-          path: ./analytics/package.json
+          path: ./package.json
   backend:
     container_name: scraper-backend-dev
     build:
@@ -39,7 +39,7 @@ services:
       - NODE_ENV=development
       - PORT=3001
     env_file:
-      - .env
+      - ./backend/.env
     depends_on:
       - redis
     volumes:
@@ -49,12 +49,12 @@ services:
     develop:
       watch:
         - action: sync
-          path: ./backend/src
-          target: /app/src
+          path: ./backend
+          target: /app
           ignore:
             - node_modules/
-        - action: rebuild
-          path: ./backend/package.json
+            - dist/
+            - "*.log"
   
   redis:
     container_name: scraper-redis
@@ -81,7 +81,6 @@ services:
 
 volumes:
   analytics_node_modules:
-  worker_node_modules:
-  queue_node_modules:
+  backend_node_modules:
   localstack_data:
   redis-data:
