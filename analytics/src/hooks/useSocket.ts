@@ -14,8 +14,7 @@ export const useSocket = ({ onJobUpdate, onJobAdded, onConnect, onDisconnect }: 
 
   useEffect(() => {
     // Connect to Socket.IO server - derive WebSocket URL from API URL
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
-    const wsUrl = apiUrl.replace('/api', '');
+    const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3001';
     
     socketRef.current = io(wsUrl, {
       path: '/ws',
