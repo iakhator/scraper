@@ -1,4 +1,4 @@
-import { createLogger, format, transports } from 'winston';
+import { createLogger, format, transports } from "winston";
 
 const levels = {
   error: 0,
@@ -15,8 +15,8 @@ export interface LoggerOptions {
 
 export function createScraperLogger(options: LoggerOptions = {}) {
   const {
-    service = 'scraper',
-    logLevel = process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+    service = "scraper",
+    logLevel = process.env.NODE_ENV === "production" ? "info" : "debug",
   } = options;
 
   return createLogger({
@@ -25,18 +25,19 @@ export function createScraperLogger(options: LoggerOptions = {}) {
     format: format.combine(
       format.timestamp(),
       format.errors({ stack: true }),
-      format.json()
+      format.json(),
     ),
     defaultMeta: { service },
     transports: [
       new transports.Console({
-        format: format.combine(
-          format.colorize(),
-          format.simple()
-        )
-      })
+        format: format.combine(format.colorize(), format.simple()),
+      }),
     ],
   });
 }
 
-export const logger = createScraperLogger({ service: 'scraper-backend' });
+export const logger = createScraperLogger({ service: "scraper-backend" });
+
+export function createChildLogger(name: string) {
+  return logger.child({ service: `scraper-backend:${name}` });
+}

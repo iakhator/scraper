@@ -8,14 +8,22 @@ import {
 } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { dynamoClient } from "./aws-config";
-import { DynamoItem, DynamoKey, DynamoReturn } from "../types";
-import { logger } from "./logger";
+import {
+  DynamoItem,
+  DynamoKey,
+  DynamoReturn,
+  JobStats,
+  ScrapeJob,
+} from "../types";
+import { createChildLogger } from "./logger";
+
+const logger = createChildLogger("database");
 
 export class DatabaseService {
   private tableName: string;
 
   constructor() {
-    this.tableName = process.env.DYNAMODB_TABLE || 'scraper_db';
+    this.tableName = process.env.DYNAMODB_TABLE || "scraper_db";
   }
 
   async putItem(item: DynamoItem): Promise<DynamoReturn<DynamoItem>> {
@@ -25,12 +33,21 @@ export class DatabaseService {
     };
 
     try {
-      const { Attributes } = await dynamoClient.send(new PutItemCommand(params));
-      logger.debug("DynamoDB putItem success", { tableName: this.tableName, itemId: item.id });
+      const { Attributes } = await dynamoClient.send(
+        new PutItemCommand(params),
+      );
+      logger.debug("DynamoDB putItem success", {
+        tableName: this.tableName,
+        itemId: item.id,
+      });
       return { data: Attributes ? unmarshall(Attributes) : undefined };
     } catch (error) {
       const err = error as Error;
-      logger.error("DynamoDB putItem failed", { error: err.message, tableName: this.tableName, itemId: item.id });
+      logger.error("DynamoDB putItem failed", {
+        error: err.message,
+        tableName: this.tableName,
+        itemId: item.id,
+      });
       return { error: err };
     }
   }
@@ -44,29 +61,45 @@ export class DatabaseService {
     try {
       const { Item } = await dynamoClient.send(new GetItemCommand(params));
       const data = Item ? unmarshall(Item) : undefined;
-      logger.debug("DynamoDB getItem success", { tableName: this.tableName, key });
+      logger.debug("DynamoDB getItem success", {
+        tableName: this.tableName,
+        key,
+      });
       return { data };
     } catch (error) {
       const err = error as Error;
-      logger.error("DynamoDB getItem failed", { error: err.message, tableName: this.tableName, key });
+      logger.error("DynamoDB getItem failed", {
+        error: err.message,
+        tableName: this.tableName,
+        key,
+      });
       return { error: err };
     }
   }
 
-  async updateItem(key: DynamoKey, updates: Record<string, any>): Promise<DynamoReturn<DynamoItem>> {
+  async updateItem(
+    key: DynamoKey,
+    updates: Record<string, any>,
+  ): Promise<DynamoReturn<DynamoItem>> {
     const updateExpression = Object.keys(updates)
-      .map(key => `#${key} = :${key}`)
-      .join(', ');
-    
-    const expressionAttributeNames = Object.keys(updates).reduce((acc, key) => {
-      acc[`#${key}`] = key;
-      return acc;
-    }, {} as Record<string, string>);
+      .map((key) => `#${key} = :${key}`)
+      .join(", ");
 
-    const expressionAttributeValues = Object.keys(updates).reduce((acc, key) => {
-      acc[`:${key}`] = updates[key];
-      return acc;
-    }, {} as Record<string, any>);
+    const expressionAttributeNames = Object.keys(updates).reduce(
+      (acc, key) => {
+        acc[`#${key}`] = key;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+
+    const expressionAttributeValues = Object.keys(updates).reduce(
+      (acc, key) => {
+        acc[`:${key}`] = updates[key];
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
 
     const params = {
       TableName: this.tableName,
@@ -74,39 +107,48 @@ export class DatabaseService {
       UpdateExpression: `SET ${updateExpression}`,
       ExpressionAttributeNames: expressionAttributeNames,
       ExpressionAttributeValues: marshall(expressionAttributeValues),
-      ReturnValues: 'ALL_NEW' as const,
+      ReturnValues: "ALL_NEW" as const,
     };
 
     try {
-      const { Attributes } = await dynamoClient.send(new UpdateItemCommand(params));
+      const { Attributes } = await dynamoClient.send(
+        new UpdateItemCommand(params),
+      );
       const data = Attributes ? unmarshall(Attributes) : undefined;
-      logger.debug("DynamoDB updateItem success", { tableName: this.tableName, key });
+      logger.debug("DynamoDB updateItem success", {
+        tableName: this.tableName,
+        key,
+      });
       return { data };
     } catch (error) {
       const err = error as Error;
-      logger.error("DynamoDB updateItem failed", { error: err.message, tableName: this.tableName, key });
+      logger.error("DynamoDB updateItem failed", {
+        error: err.message,
+        tableName: this.tableName,
+        key,
+      });
       return { error: err };
     }
   }
 
-  async queryItems(
-    options?: {
-      indexName?: string;
-      keyConditionExpression?: string;
-      filterExpression?: string;
-      expressionAttributeValues?: Record<string, any>;
-      expressionAttributeNames?: Record<string, string>;
-      limit?: number;
-      scanIndexForward?: boolean;
-    }
-  ): Promise<DynamoReturn<DynamoItem[]>> {
+  async queryItems(options?: {
+    indexName?: string;
+    keyConditionExpression?: string;
+    filterExpression?: string;
+    expressionAttributeValues?: Record<string, any>;
+    expressionAttributeNames?: Record<string, string>;
+    limit?: number;
+    scanIndexForward?: boolean;
+  }): Promise<DynamoReturn<DynamoItem[]>> {
     const params = {
       TableName: this.tableName,
       IndexName: options?.indexName,
       KeyConditionExpression: options?.keyConditionExpression,
       FilterExpression: options?.filterExpression,
-      ExpressionAttributeValues: options?.expressionAttributeValues 
-        ? marshall(options.expressionAttributeValues, { removeUndefinedValues: true })
+      ExpressionAttributeValues: options?.expressionAttributeValues
+        ? marshall(options.expressionAttributeValues, {
+            removeUndefinedValues: true,
+          })
         : undefined,
       ExpressionAttributeNames: options?.expressionAttributeNames,
       Limit: options?.limit,
@@ -114,21 +156,51 @@ export class DatabaseService {
     };
     try {
       const { Items } = await dynamoClient.send(new QueryCommand(params));
-      const items = Items ? Items.map(item => unmarshall(item)) : [];
-      logger.debug("DynamoDB queryItems success", { 
-        tableName: this.tableName, 
+      const items = Items ? Items.map((item) => unmarshall(item)) : [];
+      logger.debug("DynamoDB queryItems success", {
+        tableName: this.tableName,
         indexName: options?.indexName,
-        itemCount: items.length 
+        itemCount: items.length,
       });
       return { data: items };
     } catch (error) {
       const err = error as Error;
-      logger.error("DynamoDB queryItems failed", { 
-        error: err.message, 
-        tableName: this.tableName, 
-        indexName: options?.indexName 
+      logger.error("DynamoDB queryItems failed", {
+        error: err.message,
+        tableName: this.tableName,
+        indexName: options?.indexName,
       });
       return { error: err };
     }
+  }
+
+  // Returns aggregate job counts by status — queries all METADATA items via GSI1.
+  // Suitable for moderate scale; for large tables add pagination over LastEvaluatedKey.
+  async getStats(): Promise<DynamoReturn<JobStats>> {
+    const { data: jobs, error } = await this.queryItems({
+      indexName: "GSI1",
+      keyConditionExpression: "SK = :sk",
+      expressionAttributeValues: { ":sk": "METADATA" },
+      scanIndexForward: false,
+    });
+
+    if (error) return { error };
+
+    const stats: JobStats = {
+      total: 0,
+      queued: 0,
+      processing: 0,
+      completed: 0,
+      failed: 0,
+      cancelled: 0,
+    };
+
+    for (const job of jobs || []) {
+      stats.total++;
+      const s = job.status as ScrapeJob["status"];
+      if (s in stats) (stats as any)[s]++;
+    }
+
+    return { data: stats };
   }
 }
