@@ -1,11 +1,13 @@
 export interface ScrapeJob {
   id: string;
   url: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'queued' | 'processing' | 'completed' | 'failed';
+  priority: "low" | "medium" | "high";
+  status: "queued" | "processing" | "completed" | "failed" | "cancelled";
   createdAt: string;
   completedAt?: string;
   errorMessage?: string;
+  result?: ScrapeResult;
+  error?: string;
 }
 
 export interface ScrapedContent {
@@ -24,12 +26,12 @@ export interface ScrapedContent {
 }
 
 export interface JobUpdateEvent {
-  type: 'job-update' | 'job-added';
+  type: "job-update" | "job-added";
   jobId: string;
-  status: ScrapeJob['status'];
+  status: ScrapeJob["status"];
   data: {
     url: string;
-    priority: ScrapeJob['priority'];
+    priority: ScrapeJob["priority"];
     completedAt?: string;
     errorMessage?: string;
     timestamp: string;
@@ -44,12 +46,12 @@ export interface ApiResponse<T> {
 // API Request/Response Types
 export interface CreateJobRequest {
   url: string;
-  priority: 'low' | 'medium' | 'high';
+  priority: "low" | "medium" | "high";
 }
 
 export interface CreateBulkJobRequest {
   urls: string[];
-  priority: 'low' | 'medium' | 'high';
+  priority: "low" | "medium" | "high";
 }
 
 // Job status and result types
@@ -62,16 +64,38 @@ export interface ScrapeResult {
   downloadUrl?: string;
 }
 
-export interface ScrapeJob {
-  id: string;
-  url: string;
-  status: 'queued' | 'processing' | 'completed' | 'failed';
-  priority: 'low' | 'medium' | 'high';
-  createdAt: string;
-  completedAt?: string;
-  result?: ScrapeResult;
-  error?: string;
-}
-
 // Alias for consistency with other components
 export type Job = ScrapeJob;
+
+// Stats Types (mirrors backend)
+export interface JobStats {
+  total: number;
+  queued: number;
+  processing: number;
+  completed: number;
+  failed: number;
+  cancelled: number;
+}
+
+export interface QueueStats {
+  messagesAvailable: number;
+  messagesInFlight: number;
+  messagesDelayed: number;
+}
+
+export interface WorkerStatus {
+  isRunning: boolean;
+  activeJobs: number;
+  maxConcurrentJobs: number;
+  availableSlots: number;
+  pollIntervalMs: number;
+  activeJobDetails: Array<{ jobId: string; url: string; durationMs: number }>;
+  uptimeSeconds: number;
+}
+
+export interface StatsResponse {
+  jobs: JobStats;
+  queue: QueueStats;
+  worker: WorkerStatus;
+  timestamp: string;
+}

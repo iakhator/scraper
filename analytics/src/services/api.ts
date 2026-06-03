@@ -1,12 +1,21 @@
-import { ScrapeJob, CreateJobRequest, CreateBulkJobRequest } from '../types';
+import {
+  ScrapeJob,
+  CreateJobRequest,
+  CreateBulkJobRequest,
+  StatsResponse,
+} from "../types";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:3001/api";
 
 class ApiService {
-  private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  private async request<T>(
+    endpoint: string,
+    options?: RequestInit,
+  ): Promise<T> {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options?.headers,
       },
       ...options,
@@ -19,32 +28,54 @@ class ApiService {
     return response.json();
   }
 
-  async createJob(data: CreateJobRequest): Promise<{ jobId: string; status: string }> {
-    return this.request('/urls', {
-      method: 'POST',
+  async createJob(
+    data: CreateJobRequest,
+  ): Promise<{ jobId: string; status: string }> {
+    return this.request("/urls", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
 
-  async createBulkJobs(data: CreateBulkJobRequest): Promise<{ jobIds: string[]; status: string; count: number }> {
-    return this.request('/urls/bulk', {
-      method: 'POST',
+  async createBulkJobs(
+    data: CreateBulkJobRequest,
+  ): Promise<{ jobIds: string[]; status: string; count: number }> {
+    return this.request("/urls/bulk", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async getJobs(): Promise<{ jobs: ScrapeJob[] }> {
-    return this.request('/jobs');
+    return this.request("/jobs");
   }
 
   async retryJob(jobId: string): Promise<{ status: string; message: string }> {
     return this.request(`/jobs/${jobId}/retry`, {
-      method: 'POST',
+      method: "POST",
     });
   }
 
-  async getHealth(): Promise<{ status: string; timestamp: string; service: string }> {
-    return this.request('/health');
+  async getHealth(): Promise<{
+    status: string;
+    timestamp: string;
+    service: string;
+  }> {
+    return this.request("/health");
+  }
+
+  async getJob(jobId: string, includeContent = false): Promise<ScrapeJob> {
+    return this.request(`/jobs/${jobId}?include_content=${includeContent}`);
+  }
+
+  async cancelJob(
+    jobId: string,
+  ): Promise<{ jobId: string; status: string; cancelledAt: string }> {
+    return this.request(`/jobs/${jobId}`, { method: "DELETE" });
+  }
+
+  async getStats(): Promise<StatsResponse> {
+    return this.request("/stats");
   }
 }
 
